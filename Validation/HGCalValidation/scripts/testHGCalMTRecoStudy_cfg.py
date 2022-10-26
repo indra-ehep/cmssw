@@ -49,11 +49,13 @@ elif (options.geometry == "D93"):
     process = cms.Process('HGCalMTReco',Phase2C11I13M9)
     process.load('Configuration.Geometry.GeometryExtended2026D93Reco_cff')
     outputFile = 'file:recoutputD93.root'
-else:
+elif (options.geometry == "D92"):
     from Configuration.Eras.Era_Phase2C11I13M9_cff import Phase2C11I13M9
     process = cms.Process('HGCalMTReco',Phase2C11I13M9)
     process.load('Configuration.Geometry.GeometryExtended2026D92Reco_cff')
     outputFile = 'file:recoutputD92.root'
+else:
+    print("Please select a valid geometry version e.g. D88, D92, D93....")
 
 print("Input file: ", fileInput)
 print("Output file: ", outputFile)
