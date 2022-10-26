@@ -89,13 +89,13 @@ process.hgcalMTRecoStudyEE = process.hgcalMTRecoStudy.clone(detectorName = 'HGCa
                                                             layerList = options.layers
                                                         )
 
-process.hgcalMTRecoStudyFH = process.hgcalMTRecoStudy.clone(detectorName  = cms.string("HGCalHESiliconSensitive"),
-                                                            source        = cms.InputTag("HGCalRecHit", "HGCHEFRecHits"),
+process.hgcalMTRecoStudyFH = process.hgcalMTRecoStudy.clone(detectorName  = 'HGCalHESiliconSensitive',
+                                                            source        = 'HGCalRecHit:HGCHEFRecHits',
                                                             layerList = options.layers
                                                         )
 
-process.hgcalMTRecoStudyBH = process.hgcalMTRecoStudy.clone( detectorName  = cms.string("HGCalHEScintillatorSensitive"),
-                                                             source        = cms.InputTag("HGCalRecHit", "HGCHEBRecHits"),
+process.hgcalMTRecoStudyBH = process.hgcalMTRecoStudy.clone( detectorName  = 'HGCalHEScintillatorSensitive',
+                                                             source        = 'HGCalRecHit:HGCHEBRecHits',
                                                              layerList = options.layers
                                                          )
 
