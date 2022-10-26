@@ -631,8 +631,6 @@ HGCalMTRecoStudy::HGCalMTRecoStudy(const edm::ParameterSet &iConfig)
   caloGeomToken_ = esConsumes<CaloGeometry, CaloGeometryRecord>();
 }
 
-HGCalMTRecoStudy::~HGCalMTRecoStudy() {}
-
 //
 // member functions
 //
