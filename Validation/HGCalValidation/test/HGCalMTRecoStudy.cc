@@ -847,12 +847,6 @@ void HGCalMTRecoStudy::analyze(const edm::Event &iEvent, const edm::EventSetup &
   }
 }
 
-// ------------ method called once each job just before starting event loop  ------------
-void HGCalMTRecoStudy::beginJob() {}
-
-// ------------ method called once each job just after ending the event loop  ------------
-void HGCalMTRecoStudy::endJob() {}
-
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
 void HGCalMTRecoStudy::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
   //The following says we do not know what parameters are allowed so do no validation
