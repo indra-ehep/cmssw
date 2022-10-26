@@ -84,8 +84,8 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.maxE
 
 process.load('Validation.HGCalValidation.hgcalMTRecoStudy_cfi')
 
-process.hgcalMTRecoStudyEE = process.hgcalMTRecoStudy.clone(detectorName = cms.string('HGCalEESensitive'),
-                                                            source = cms.InputTag('HGCalRecHit', 'HGCEERecHits'),
+process.hgcalMTRecoStudyEE = process.hgcalMTRecoStudy.clone(detectorName = 'HGCalEESensitive',
+                                                            source = 'HGCalRecHit:HGCEERecHits',
                                                             layerList = options.layers
                                                         )
 
