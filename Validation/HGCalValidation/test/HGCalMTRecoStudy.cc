@@ -219,10 +219,10 @@ HGCalMTRecoStudy::HGCalMTRecoStudy(const edm::ParameterSet &iConfig)
       layerList.push_back(stoi(layers_));
   }
 
-  for (unsigned int i = 0; i < layerList.size(); i++) {
-    std::cout << layerList[i] << ",";
-  }
-  std::cout << std::endl;
+//  for (unsigned int i = 0; i < layerList.size(); i++) 
+//    std::cout << layerList[i] << ",";
+//  }
+//  std::cout << std::endl;
 
   usesResource(TFileService::kSharedResource);
   edm::Service<TFileService> fs;
