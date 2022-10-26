@@ -847,13 +847,6 @@ void HGCalMTRecoStudy::analyze(const edm::Event &iEvent, const edm::EventSetup &
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
 void HGCalMTRecoStudy::fillDescriptions(edm::ConfigurationDescriptions &descriptions) {
-  //The following says we do not know what parameters are allowed so do no validation
-  // Please change this to state exactly what you do use, even if it is no parameters
-
-  // edm::ParameterSetDescription desc;
-  // desc.setUnknown();
-  // descriptions.addDefault(desc);
-
   edm::ParameterSetDescription desc;
   desc.add<std::string>("detectorName", "HGCalEESensitive");
   desc.add<edm::InputTag>("source", edm::InputTag("HGCalRecHit", "HGCEERecHits"));
