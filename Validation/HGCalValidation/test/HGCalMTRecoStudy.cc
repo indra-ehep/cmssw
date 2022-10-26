@@ -66,7 +66,7 @@ class HGCalMTRecoStudy : public edm::one::EDAnalyzer<edm::one::SharedResources> 
 public:
   //Implemented following Validation/HGCalValidation/test/HGCalRecHitStudy.cc
   explicit HGCalMTRecoStudy(const edm::ParameterSet &);
-  ~HGCalMTRecoStudy();
+  ~HGCalMTRecoStudy() override = default;
 
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
 
