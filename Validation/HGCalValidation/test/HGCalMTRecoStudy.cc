@@ -235,7 +235,6 @@ HGCalMTRecoStudy::HGCalMTRecoStudy(const edm::ParameterSet &iConfig)
   for (unsigned int i = 0; i < 47; i++) {
     hELossLayer0.emplace_back(
         fs->make<TH1D>(Form("hELossLayer0_%02d", i + 1), Form("Rec:ELoss0 for layer %d", i + 1), 500, 0., 5000.));
-
     hELossLayer1.emplace_back(
         fs->make<TH1D>(Form("hELossLayer1_%02d", i + 1), Form("Rec:ELoss1 for layer %d", i + 1), 500, 0., 5000.));
 
