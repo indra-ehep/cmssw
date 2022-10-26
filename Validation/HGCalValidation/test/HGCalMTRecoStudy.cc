@@ -218,7 +218,6 @@ HGCalMTRecoStudy::HGCalMTRecoStudy(const edm::ParameterSet &iConfig)
     if (stoi(layers_) >= 1 and stoi(layers_) <= 47)
       layerList.push_back(stoi(layers_));
   }
-  
 
   usesResource(TFileService::kSharedResource);
   edm::Service<TFileService> fs;
