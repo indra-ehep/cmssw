@@ -82,7 +82,8 @@ namespace l1thgcfirmware {
     }
 
     inline eFraction_t makeL1EFraction(float num, float denom) {
-      float frac = round(256 * num / denom);
+      float frac = num/denom;
+      frac = round( ( round(frac * (1 << 12)) / ( 1 << 12 ) ) * 256 );  // Firmware accurate calculation
       if ( frac >= 256. ) frac = 255.; 
       return frac;
       };
