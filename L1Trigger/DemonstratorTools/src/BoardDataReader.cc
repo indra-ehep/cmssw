@@ -105,6 +105,10 @@ namespace l1t::demo {
             break;
           }
 
+          if ( !chanData.at(framesBeforeEvent).valid ) {
+            eventIncomplete = true;
+            break;
+          }
           std::vector<ap_uint<64>> chanEventData(packetLength);
           for (size_t j = 0; j < packetLength; j++)
             chanEventData.at(j) = chanData.at(framesBeforeEvent + j).data;
