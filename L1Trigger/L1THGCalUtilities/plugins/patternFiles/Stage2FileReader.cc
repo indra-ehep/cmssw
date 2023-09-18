@@ -63,7 +63,7 @@ private:
 
   // ----------member functions ----------------------
   void produce(edm::Event&, const edm::EventSetup&) override;
-  std::vector<l1thgcfirmware::HGCalCluster_HW> getRefHWClusters( const l1t::HGCalMulticlusterBxCollection& refClusters, const unsigned int iSector );
+  std::vector<l1thgcfirmware::HGCalCluster_HW> getRefHWClusters( const l1t::HGCalMulticlusterBxCollection& refClusters, l1t::HGCalMulticlusterBxCollection& selectedRefClusters, const unsigned int iSector );
   void compareClustersToRef( std::vector<l1thgcfirmware::HGCalCluster_HW> clusters, std::vector<l1thgcfirmware::HGCalCluster_HW> refClusters );
 
   // ----------member data ---------------------------
@@ -91,7 +91,8 @@ Stage2FileReader::Stage2FileReader(const edm::ParameterSet& iConfig)
     sector_(iConfig.getUntrackedParameter<unsigned int>("sector")),
     nClusters_(0)
  {
-  produces<l1t::HGCalMulticlusterBxCollection>();
+  produces<l1t::HGCalMulticlusterBxCollection>("HWClusters");
+  produces<l1t::HGCalMulticlusterBxCollection>("RefClusters");
 }
 
 // ------------ method called to produce the data  ------------
@@ -112,14 +113,58 @@ void Stage2FileReader::produce(edm::Event& iEvent, const edm::EventSetup& iSetup
   std::vector<l1thgcfirmware::HGCalCluster_HW> hwClusters = l1thgcfirmware::decodeClusters(clusterWords);
 
   // Ref clusters
-  const l1t::HGCalMulticlusterBxCollection refClusters = iEvent.get(refClustersToken_);
-  std::vector<l1thgcfirmware::HGCalCluster_HW> refHWClusters = getRefHWClusters( refClusters, sector_ );
+  const l1t::HGCalMulticlusterBxCollection allRefClusters = iEvent.get(refClustersToken_);
+  l1t::HGCalMulticlusterBxCollection selectedRefClusters;
+  std::vector<l1thgcfirmware::HGCalCluster_HW> refHWClusters = getRefHWClusters( allRefClusters, selectedRefClusters, sector_ );
 
   compareClustersToRef( hwClusters, refHWClusters );
   std::cout << "N clusters so far : " << nClusters_ << std::endl;
+
+  l1t::HGCalMulticlusterBxCollection edmHWClusters;
+  for ( const auto& hwCluster : hwClusters ) {
+
+    // Decode which zside and sector we are extracting data for
+    int zside = (sector_ > 2) ? 1 : -1;
+    unsigned int sector = sector_ % 3;
+    if ( zside == 1 ) {
+      if ( sector == 1 ) sector = 2;
+      else if ( sector == 2 ) sector = 1;
+    }
+
+    double pt = l1thgcfirmware::Scales::floatEt(hwCluster.e);
+
+    double eta = l1thgcfirmware::Scales::floatEta(hwCluster.w_eta);
+    eta *= zside;
+
+    double phi = l1thgcfirmware::Scales::floatPhi(hwCluster.w_phi);
+    double rotatedPhi = phi;
+    if (sector == 1) {
+      rotatedPhi += (2. * M_PI / 3.);
+    } else if (sector == 2) {
+      rotatedPhi += (4. * M_PI / 3.);
+    }
+    phi = rotatedPhi;
+
+    if (zside) {
+      phi = M_PI - phi;
+    }
+    phi -= (phi > M_PI) ? 2 * M_PI : 0;
+    math::PtEtaPhiMLorentzVector clusterP4(pt, eta, phi, 0.);
+
+    l1t::HGCalMulticluster multicluster;
+    multicluster.setP4(clusterP4);
+
+    multicluster.zBarycenter(l1thgcfirmware::Scales::floatZ(hwCluster.w_z));
+    multicluster.sigmaRRTot( l1thgcfirmware::Scales::floatSigmaRozRoz(hwCluster.sigma_roz) );
+
+    edmHWClusters.push_back( 0, multicluster );
+  }
+
+  iEvent.put(std::make_unique<l1t::HGCalMulticlusterBxCollection>(std::move(edmHWClusters)), "HWClusters");
+  iEvent.put(std::make_unique<l1t::HGCalMulticlusterBxCollection>(std::move(selectedRefClusters)), "RefClusters");
 }
 
-std::vector<l1thgcfirmware::HGCalCluster_HW> Stage2FileReader::getRefHWClusters( const l1t::HGCalMulticlusterBxCollection& refClusters, const unsigned int iSector ) {
+std::vector<l1thgcfirmware::HGCalCluster_HW> Stage2FileReader::getRefHWClusters( const l1t::HGCalMulticlusterBxCollection& refClusters, l1t::HGCalMulticlusterBxCollection& selectedRefClusters, const unsigned int iSector ) {
 
   // Decode which zside and sector we are extracting data for
   int zside = (iSector > 2) ? 1 : -1;
@@ -140,6 +185,7 @@ std::vector<l1thgcfirmware::HGCalCluster_HW> Stage2FileReader::getRefHWClusters(
 
     const auto& clusterWords = cl3d_itr->getHwData();
     refHWClusters.emplace_back( l1thgcfirmware::HGCalCluster_HW::unpack(clusterWords) );
+    selectedRefClusters.push_back( 0, *cl3d_itr );
   }
   return refHWClusters;
 }
@@ -167,22 +213,38 @@ void Stage2FileReader::compareClustersToRef( std::vector<l1thgcfirmware::HGCalCl
         allGood = false;
         continue;
       }
+      if ( cluster.sigma_roz != 127 && refCluster.sigma_roz == 127 ) {
+        std::cout << "Saturated sigma r/z r/z in emulator" << std::endl;
+        allGood = false;
+        continue;
+      }
       if ( abs(refCluster.w_eta - cluster.w_eta) == 1 ) {
         std::cout << "Etas differ by one bit" << std::endl;
+        allGood = false;
         continue;
       }
       if ( clusters.size() > iCluster+1) {
         if ( refCluster == clusters.at(iCluster+1 )) {
           std::cout << "Cluster ordering out by one" << std::endl;
+          allGood = false;
           continue;
         }
       }
+      if ( abs(refCluster.fractionInCE_E - cluster.fractionInCE_E) == 1 ) {
+        std::cout << "Fraction in CE E differ by one bit" << std::endl;
+        allGood = false;
+
+        continue;
+      }
+
+      std::cout << "--------> UNKOWN BAD CLUSTER" << std::endl;
       std::cout << "--->  e : " << refCluster.e << " " << cluster.e << std::endl;
       std::cout << "--->  e EM : " << refCluster.e_em << " " << cluster.e_em << std::endl;
       std::cout << "--->  eta : " << refCluster.w_eta << " " << cluster.w_eta << std::endl;
       std::cout << "--->  phi : " << refCluster.w_phi << " " << cluster.w_phi << std::endl;
       std::cout << "--->  z : " << refCluster.w_z << " " << cluster.w_z << std::endl;
       std::cout << "--->  sigma r/z : " << refCluster.sigma_roz << " " << cluster.sigma_roz << std::endl;
+      std::cout << "---> fractionInCE_E : " << refCluster.fractionInCE_E << " " << cluster.fractionInCE_E << std::endl;
       std::cout << "-----------------------------------" << std::endl;
       allGood = false;
     }

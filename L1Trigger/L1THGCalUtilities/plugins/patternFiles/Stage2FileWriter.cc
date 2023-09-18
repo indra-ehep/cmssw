@@ -203,9 +203,6 @@ std::array<std::vector<ap_uint<64>>, 4> Stage2FileWriter::encodeTowersAndCluster
 
     ++iCluster;
     if ( iCluster > 160 ) break;
-    // if ( sector == 0 && zside == -1 ) {
-    //   std::cout << "Cluster pt, eta, phi, nTC,  : " << sector << " " << cl3d_itr->pt() << " " << cl3d_itr->eta() << " " << cl3d_itr->phi() << " " << cl3d_itr->constituents().size() << " " << cl3d_itr->hw_sigma_e_quotient() << " " << cl3d_itr->hw_sigma_e_fraction() << std::endl;
-    // }
     //  << " " << cl3d_itr->getHwData()[0].to_string() << std::endl;
     // std::cout << "Phi, eta : " << cl3d_itr->phi() << " " << cl3d_itr->eta() << " " << cl3d_itr->getHwData()[1].to_string() << std::endl;
     const auto& clusterWords = cl3d_itr->getHwData();
