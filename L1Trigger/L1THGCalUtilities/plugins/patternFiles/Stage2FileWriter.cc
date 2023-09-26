@@ -31,6 +31,8 @@
 
 #include "DataFormats/L1THGCal/interface/HGCalMulticluster.h"
 #include "DataFormats/L1THGCal/interface/HGCalCluster_HW.h"
+#include "DataFormats/L1THGCal/interface/HGCalTower_HW.h"
+#include "DataFormats/L1THGCal/interface/HGCalTowerMap.h"
 #include "DataFormats/Common/interface/View.h"
 
 #include "L1Trigger/DemonstratorTools/interface/BoardDataWriter.h"
@@ -83,12 +85,16 @@ private:
   void analyze(const edm::Event&, const edm::EventSetup&) override;
   void endJob() override;
 
-  std::array<std::vector<ap_uint<64>>, 4> encodeTowersAndClusters(const l1t::HGCalMulticlusterBxCollection&, const unsigned int iSector );
+  std::array<std::vector<ap_uint<64>>, 4> encodeTowersAndClusters(const l1t::HGCalMulticlusterBxCollection&, const l1t::HGCalTowerBxCollection&, const unsigned int iSector );
 
   std::array<std::vector<ap_uint<64>>, 8> encodeClusterSumRecord(const l1t::HGCalMulticlusterBxCollection&, const unsigned int iSector );
 
+  void encodeTowers( const l1t::HGCalTowerBxCollection& towers, const unsigned int sector, const int zside, std::array<std::vector<ap_uint<64>>, 4>& output );
+  ap_uint<16> encodeTower( const l1t::HGCalTower& tower );
+
   // ----------member data ---------------------------
   edm::EDGetTokenT<l1t::HGCalMulticlusterBxCollection> clustersToken_;
+  edm::EDGetTokenT<l1t::HGCalTowerBxCollection> towersToken_;
 
   std::vector<l1t::demo::BoardDataWriter> fileWritersOutputToL1T_;
   std::vector<l1t::demo::BoardDataWriter> fileWritersClusterSumsInput_;
@@ -102,17 +108,18 @@ private:
 
 Stage2FileWriter::Stage2FileWriter(const edm::ParameterSet& iConfig)
     : clustersToken_(consumes<l1t::HGCalMulticlusterBxCollection>(iConfig.getUntrackedParameter<edm::InputTag>("clusters"))),
+      towersToken_(consumes<l1t::HGCalTowerBxCollection>(iConfig.getUntrackedParameter<edm::InputTag>("towers"))),
       tmIndex_(iConfig.getUntrackedParameter<unsigned int>("tmIndex")),
       eventCounter_(0) {
       for ( unsigned int iFileWriter=0; iFileWriter < 6; ++iFileWriter ) {
         fileWritersOutputToL1T_.emplace_back(l1t::demo::parseFileFormat(iConfig.getUntrackedParameter<std::string>("format")),
-                                    std::string("hgc_sec")+std::to_string(iFileWriter)+"_tm"+std::to_string(tmIndex_)+std::string("-output-ref"),
+                                    std::string("patterns/hgc_sec")+std::to_string(iFileWriter)+"_tm"+std::to_string(tmIndex_)+std::string("-output-ref"),
                                     kFramesPerTMUXPeriod,
                                     kS2BoardTMUX,
                                     kMaxLinesPerFile,
                                     kChannelSpecsOutputToL1T);
         fileWritersClusterSumsInput_.emplace_back(l1t::demo::parseFileFormat(iConfig.getUntrackedParameter<std::string>("format")),
-                                            std::string("hgc_sec")+std::to_string(iFileWriter)+"_tm"+std::to_string(tmIndex_)+std::string("-input"),
+                                            std::string("patterns/hgc_sec")+std::to_string(iFileWriter)+"_tm"+std::to_string(tmIndex_)+std::string("-input"),
                                             kFramesPerTMUXPeriod,
                                             kS2BoardTMUX,
                                             kMaxLinesPerFile,
@@ -126,8 +133,9 @@ void Stage2FileWriter::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   // Loop S2 sectors and produce pattern file for each sector
   // Would be better to sort clusters into sectors first
   for ( unsigned int iSector = 0; iSector < 6; ++iSector ) {
+    // if ( iSector != 0 ) continue;
     // 1) Encode tower and cluster information onto vectors containing link data
-    const auto outputData(encodeTowersAndClusters(iEvent.get(clustersToken_), iSector) );
+    const auto outputData(encodeTowersAndClusters(iEvent.get(clustersToken_), iEvent.get(towersToken_), iSector) );
     const auto clusterSumInputData(encodeClusterSumRecord(iEvent.get(clustersToken_), iSector) );
 
     // 2) Pack track information into 'event data' object, and pass that to file writer
@@ -160,12 +168,13 @@ void Stage2FileWriter::fillDescriptions(edm::ConfigurationDescriptions& descript
   // Stage2FileWriter
   edm::ParameterSetDescription desc;
   desc.addUntracked<edm::InputTag>("clusters", edm::InputTag("hgcalBackEndLayer2Producer", "HGCalBackendLayer2Processor3DClusteringSA"));
+  desc.addUntracked<edm::InputTag>("towers", edm::InputTag("l1tHGCalTowerProducer", "HGCalTowerProcessor"));
   desc.addUntracked<unsigned int>("tmIndex", 0);
   desc.addUntracked<std::string>("format", "EMP");
   descriptions.add("Stage2FileWriter", desc);
 }
 
-std::array<std::vector<ap_uint<64>>, 4> Stage2FileWriter::encodeTowersAndClusters(const l1t::HGCalMulticlusterBxCollection& clusters, const unsigned int iSector ) {
+std::array<std::vector<ap_uint<64>>, 4> Stage2FileWriter::encodeTowersAndClusters(const l1t::HGCalMulticlusterBxCollection& clusters, const l1t::HGCalTowerBxCollection& towers, const unsigned int iSector ) {
   std::array<std::vector<ap_uint<64>>, 4> output;
 
   // Decode which zside and sector we are extracting data for
@@ -175,7 +184,7 @@ std::array<std::vector<ap_uint<64>>, 4> Stage2FileWriter::encodeTowersAndCluster
     if ( sector == 1 ) sector = 2;
     else if ( sector == 2 ) sector = 1;
   }
-  // std::cout << "Sectors : " << iSector << " " << zside << " " << sector << std::endl;
+  std::cout << "Sectors : " << iSector << " " << zside << " " << sector << std::endl;
 
   // First frame empty for alignment
   ap_uint<64> packetHeader = 0;
@@ -186,14 +195,9 @@ std::array<std::vector<ap_uint<64>>, 4> Stage2FileWriter::encodeTowersAndCluster
     output[iLink].push_back( packetHeader );
   }
 
-  // Tower data for this sector
-  // Dummy data
-  for ( unsigned int iTowerFrame = 0; iTowerFrame < 30; ++iTowerFrame ) {
-    output[0].push_back( iTowerFrame*4 + 0 );
-    output[1].push_back( iTowerFrame*4 + 1 );
-    output[2].push_back( iTowerFrame*4 + 2 );
-    output[3].push_back( iTowerFrame*4 + 3 );
-  }
+
+
+  encodeTowers( towers, sector, zside, output );
 
   // Cluster data for this sector
   unsigned int iCluster = 0;
@@ -204,7 +208,7 @@ std::array<std::vector<ap_uint<64>>, 4> Stage2FileWriter::encodeTowersAndCluster
     ++iCluster;
     if ( iCluster > 160 ) break;
     //  << " " << cl3d_itr->getHwData()[0].to_string() << std::endl;
-    // std::cout << "Phi, eta : " << cl3d_itr->phi() << " " << cl3d_itr->eta() << " " << cl3d_itr->getHwData()[1].to_string() << std::endl;
+    std::cout << "Cluster Pt, eta, phi : " << cl3d_itr->pt() << " " << cl3d_itr->eta() << " " << cl3d_itr->phi() << std::endl;
     const auto& clusterWords = cl3d_itr->getHwData();
     // std::cout << "Cluster words : " ;
     // for (const auto& word : clusterWords ) std::cout << word << " ";
@@ -296,6 +300,93 @@ std::array<std::vector<ap_uint<64>>, 8> Stage2FileWriter::encodeClusterSumRecord
     ++nClusterSums;
   }
   return output;
+}
+
+void Stage2FileWriter::encodeTowers( const l1t::HGCalTowerBxCollection& towers, const unsigned int sector, const int zside, std::array<std::vector<ap_uint<64>>, 4>& output ) {
+  // Tower data for this sector
+  // Initialize to empty towers
+  for ( unsigned int iTowerFrame = 0; iTowerFrame < 30; ++iTowerFrame ) {
+    output[0].push_back( 0 );
+    output[1].push_back( 0 );
+    output[2].push_back( 0 );
+    output[3].push_back( 0 );
+  }
+
+  // Determine iPhi range of towers from sector
+  unsigned iPhiMin = 42;
+  unsigned iPhiMax = 65;
+  if ( sector == 1 ) {
+    if ( zside == 1 ) {
+      iPhiMin = 18;
+      iPhiMax = 41;
+    }
+    else {
+      iPhiMin = 66;
+      iPhiMax = 17; // Wrap around...
+    }
+
+  }
+  else if ( sector == 2 ) {
+    if ( zside == 1 ) {
+      iPhiMin = 66;
+      iPhiMax = 17; // Wrap around...
+    }
+    else {
+      iPhiMin = 18;
+      iPhiMax = 41;
+    }
+  }
+
+  // Loop towers, select those in relevant sector
+  for (auto tower_itr = towers.begin(0); tower_itr != towers.end(0); tower_itr++) {
+    if ( tower_itr->id().zside() != zside ) continue;
+    unsigned iPhi = tower_itr->id().iPhi();
+    if ( iPhiMin > iPhiMax ) {
+      if ( iPhi < iPhiMin && iPhi > iPhiMax ) continue;
+    }
+    else {
+      if ( iPhi < iPhiMin || iPhi >= iPhiMax ) continue;
+    }
+
+    int iPhiLocal = iPhi - 18;
+    while ( iPhiLocal >= 24 ) iPhiLocal -= 24;
+    if ( iPhiLocal < 0 ) iPhiLocal += 24;
+    std::cout << "iPhi, local : " << iPhi << " " << iPhiLocal << std::endl;
+
+    // Work out which frame, link, and bits this tower belongs to
+    unsigned iEta = tower_itr->id().iEta();
+    unsigned iWord = iEta * 24 + iPhiLocal;
+    unsigned iFrame = iWord / 16;
+    unsigned iLink = (iWord % 16) / 4;
+    unsigned iTowerInWord = iWord % 4;
+    unsigned firstBit = iTowerInWord * 16;
+    unsigned lastBit = (iTowerInWord+1) * 16 - 1;
+
+    std::cout << "Word, frame, link : " << iEta << " " << iPhiLocal << " " << iWord << " " << iFrame << " " << iLink << " " << iTowerInWord << std::endl;
+    // if ( tower_itr->pt() > 1 ) {
+    std::cout << "Tower : " << tower_itr->id().zside() << " " << tower_itr->id().iEta() << " " << tower_itr->id().iPhi() << " " << tower_itr->pt() << " " << tower_itr->et() << " " << tower_itr->eta() <<  " " << tower_itr->phi() << " " << tower_itr->etEm() << " " << tower_itr->etHad() << std::endl;
+    // }
+
+    // Encode tower into hw format, add to output
+    auto word = output.at(iLink).at(iFrame+1);
+    std::cout << "Word before : " << word << " " << firstBit << " " << lastBit << std::endl;
+    word(lastBit, firstBit) = encodeTower(*tower_itr);
+    std::cout << "Packed tower word : " << encodeTower(*tower_itr) << " " << tower_itr->et() << " " << tower_itr->etHad() << " " << tower_itr->etEm() << std::endl;
+    output.at(iLink).at(iFrame+1) = word;
+    std::cout << "Word after : " << word << " " << word.to_string() << " " << output.at(iLink).at(iFrame+1) << std::endl;
+
+  }
+
+}
+
+ap_uint<16> Stage2FileWriter::encodeTower( const l1t::HGCalTower& tower ) {
+  ap_uint<16> towerWord = 0;
+  l1thgcfirmware::HGCalTower_HW tower_hw;
+  tower_hw.clear();
+  tower_hw.e = l1thgcfirmware::Scales::HGCaltoL1_towerEt(tower.et());
+  tower_hw.setEncodedHOE( tower.etHad(), tower.etEm() );
+  tower_hw.setFeatureBits( tower.et() );
+  return tower_hw.pack();
 }
 
 

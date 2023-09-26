@@ -11,6 +11,11 @@ options.register('tm',
                 VarParsing.VarParsing.multiplicity.singleton,
                 VarParsing.VarParsing.varType.int,
                 "Time slice of pattern files")
+options.register('effTM',
+                -1,
+                VarParsing.VarParsing.multiplicity.singleton,
+                VarParsing.VarParsing.varType.int,
+                "Effective TM of HGCal (i.e. for Correlator TMUX 6, HGCal looks at 1 in 3 events in input file, rather than 1 in 18, so set effTM to 3)")
 options.parseArguments()
 
 inputFiles = []
@@ -48,21 +53,33 @@ process.Timing = cms.Service("Timing", summaryOnly = cms.untracked.bool(True))
 process.load('FWCore.Modules.preScaler_cfi')
 
 
-if options.tm == 0:
-    # Time slice 0
-    process.preScaler.prescaleFactor = 3
-    process.preScaler.prescaleOffset = 1
-    process.Stage2FileWriter.tmIndex = 0
-elif options.tm == 6:
-    # #Time slice 6
-    process.preScaler.prescaleFactor = 3
-    process.preScaler.prescaleOffset = 2
-    process.Stage2FileWriter.tmIndex = 6
-elif options.tm == 12:
-    # Time slice 12
-    process.preScaler.prescaleFactor = 3
-    process.preScaler.prescaleOffset = 0
-    process.Stage2FileWriter.tmIndex = 12
+# Correlator tests
+if options.effTM == 3 :
+    if options.tm == 0:
+        # Time slice 0
+        process.preScaler.prescaleFactor = options.effTM
+        process.preScaler.prescaleOffset = 1
+        process.Stage2FileWriter.tmIndex = options.tm
+    elif options.tm == 6:
+        # #Time slice 6
+        process.preScaler.prescaleFactor = options.effTM
+        process.preScaler.prescaleOffset = 2
+        process.Stage2FileWriter.tmIndex = options.tm
+    elif options.tm == 12:
+        # Time slice 12
+        process.preScaler.prescaleFactor = options.effTM
+        process.preScaler.prescaleOffset = 0
+        process.Stage2FileWriter.tmIndex = options.tm
+# GCT tests
+elif options.effTM == 2 :
+    if options.tm == 0:
+        process.preScaler.prescaleFactor = options.effTM
+        process.preScaler.prescaleOffset = 1
+        process.Stage2FileWriter.tmIndex = options.tm
+    if options.tm == 9:
+        process.preScaler.prescaleFactor = options.effTM
+        process.preScaler.prescaleOffset = 0
+        process.Stage2FileWriter.tmIndex = options.tm
 else:
     print ("Producing pattern files from all time slices...")
     process.preScaler.prescaleFactor = 1
