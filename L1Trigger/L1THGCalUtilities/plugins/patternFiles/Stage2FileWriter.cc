@@ -351,7 +351,6 @@ void Stage2FileWriter::encodeTowers( const l1t::HGCalTowerBxCollection& towers, 
     int iPhiLocal = iPhi - 18;
     while ( iPhiLocal >= 24 ) iPhiLocal -= 24;
     if ( iPhiLocal < 0 ) iPhiLocal += 24;
-    std::cout << "iPhi, local : " << iPhi << " " << iPhiLocal << std::endl;
 
     // Work out which frame, link, and bits this tower belongs to
     unsigned iEta = tower_itr->id().iEta();
@@ -362,18 +361,14 @@ void Stage2FileWriter::encodeTowers( const l1t::HGCalTowerBxCollection& towers, 
     unsigned firstBit = iTowerInWord * 16;
     unsigned lastBit = (iTowerInWord+1) * 16 - 1;
 
-    std::cout << "Word, frame, link : " << iEta << " " << iPhiLocal << " " << iWord << " " << iFrame << " " << iLink << " " << iTowerInWord << std::endl;
-    // if ( tower_itr->pt() > 1 ) {
-    std::cout << "Tower : " << tower_itr->id().zside() << " " << tower_itr->id().iEta() << " " << tower_itr->id().iPhi() << " " << tower_itr->pt() << " " << tower_itr->et() << " " << tower_itr->eta() <<  " " << tower_itr->phi() << " " << tower_itr->etEm() << " " << tower_itr->etHad() << std::endl;
-    // }
+    if ( tower_itr->pt() > 1 ) {
+      std::cout << "Tower : " << tower_itr->id().zside() << " " << tower_itr->id().iEta() << " " << tower_itr->id().iPhi() << " " << tower_itr->pt() << " " << tower_itr->et() << " " << tower_itr->eta() <<  " " << tower_itr->phi() << " " << tower_itr->etEm() << " " << tower_itr->etHad() << std::endl;
+    }
 
     // Encode tower into hw format, add to output
     auto word = output.at(iLink).at(iFrame+1);
-    std::cout << "Word before : " << word << " " << firstBit << " " << lastBit << std::endl;
     word(lastBit, firstBit) = encodeTower(*tower_itr);
-    std::cout << "Packed tower word : " << encodeTower(*tower_itr) << " " << tower_itr->et() << " " << tower_itr->etHad() << " " << tower_itr->etEm() << std::endl;
     output.at(iLink).at(iFrame+1) = word;
-    std::cout << "Word after : " << word << " " << word.to_string() << " " << output.at(iLink).at(iFrame+1) << std::endl;
 
   }
 
