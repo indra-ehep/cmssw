@@ -165,7 +165,7 @@ void HGCalHistoClusteringWrapper::convertAlgorithmOutputs(
       continue;
 
     // Convert to format expected by L1T
-    const auto hwData = cluster->convertToL1TFormat( theConfiguration_ );
+    const auto hwData = cluster->hwCluster();
 
     // Remove if below pt threshold
     double pt = l1thgcfirmware::Scales::floatEt(hwData.e);
@@ -213,31 +213,6 @@ void HGCalHistoClusteringWrapper::convertAlgorithmOutputs(
     multicluster.showerLength(cluster->showerLen());
     multicluster.coreShowerLength(cluster->coreShowerLen());
     multicluster.firstLayer(cluster->firstLayer());
-    multicluster.hw_sigma_e_quotient(cluster->sigma_e_quotient());
-    multicluster.hw_sigma_e_fraction(cluster->sigma_e_fraction());
-    multicluster.hw_mean_z_quotient(cluster->mean_z_quotient());
-    multicluster.hw_mean_z_fraction(cluster->mean_z_fraction());
-    multicluster.hw_mean_phi_quotient(cluster->mean_phi_quotient());
-    multicluster.hw_mean_phi_fraction(cluster->mean_phi_fraction());
-    multicluster.hw_mean_eta_quotient(cluster->mean_eta_quotient());
-    multicluster.hw_mean_eta_fraction(cluster->mean_eta_fraction());
-    multicluster.hw_mean_roz_quotient(cluster->mean_roz_quotient());
-    multicluster.hw_mean_roz_fraction(cluster->mean_roz_fraction());
-    multicluster.hw_sigma_z_quotient(cluster->sigma_z_quotient());
-    multicluster.hw_sigma_z_fraction(cluster->sigma_z_fraction());
-    multicluster.hw_sigma_phi_quotient(cluster->sigma_phi_quotient());
-    multicluster.hw_sigma_phi_fraction(cluster->sigma_phi_fraction());
-    multicluster.hw_sigma_eta_quotient(cluster->sigma_eta_quotient());
-    multicluster.hw_sigma_eta_fraction(cluster->sigma_eta_fraction());
-    multicluster.hw_sigma_roz_quotient(cluster->sigma_roz_quotient());
-    multicluster.hw_sigma_roz_fraction(cluster->sigma_roz_fraction());
-    multicluster.hw_e_em_over_e_quotient(cluster->e_em_over_e_quotient());
-    multicluster.hw_e_em_over_e_fraction(cluster->e_em_over_e_fraction());
-    multicluster.hw_e_em_core_over_e_em_quotient(cluster->e_em_core_over_e_em_quotient());
-    multicluster.hw_e_em_core_over_e_em_fraction(cluster->e_em_core_over_e_em_fraction());
-    multicluster.hw_e_h_early_over_e_quotient(cluster->e_h_early_over_e_quotient());
-    multicluster.hw_e_h_early_over_e_fraction(cluster->e_h_early_over_e_fraction());
-
 
     multicluster.setHwData( hwData.pack() );
     multicluster.setHwSector( sector );

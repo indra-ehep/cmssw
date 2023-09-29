@@ -123,7 +123,27 @@ namespace l1thgcfirmware {
     sigma_roz_t sigma_roz;
 
     inline bool operator==(const HGCalCluster_HW &other) const {
-      return e == other.e && e_em == other.e_em && w_eta == other.w_eta && w_phi == other.w_phi && w_z == other.w_z  && sigma_roz == other.sigma_roz && fractionInCE_E == other.fractionInCE_E;
+      return e == other.e &&
+              e_em == other.e_em &&
+              gctBits == other.gctBits &&
+              fractionInCE_E == other.fractionInCE_E &&
+              fractionInCoreCE_E == other.fractionInCoreCE_E &&
+              fractionInEarlyCE_E == other.fractionInEarlyCE_E &&
+              firstLayer == other.firstLayer &&
+              w_eta == other.w_eta &&
+              w_phi == other.w_phi &&
+              w_z == other.w_z  &&
+              nTC == other.nTC &&
+              qualFlags == other.qualFlags &&
+              sigma_E == other.sigma_E &&
+              lastLayer == other.lastLayer &&
+              showerLength == other.showerLength &&
+              sigma_z == other.sigma_z &&
+              // sigma_phi == other.sigma_phi &&
+              coreShowerLength == other.coreShowerLength &&
+              sigma_eta == other.sigma_eta &&
+              sigma_roz == other.sigma_roz;
+
     }
 
     inline bool operator!=(const HGCalCluster_HW &other) const {
@@ -276,15 +296,18 @@ namespace l1thgcfirmware {
     }
 
     inline void setGCTBits() {
-      ap_uint<1> gctBit0 = fractionInCE_E > 64;
-      ap_uint<1> gctBit1 = fractionInCoreCE_E > 64;
-      ap_uint<1> gctBit2 = fractionInEarlyCE_E > 64;
+      ap_uint<1> gctBit0 = fractionInCE_E > 128;
+      ap_uint<1> gctBit1 = fractionInCoreCE_E > 128;
+      ap_uint<1> gctBit2 = fractionInEarlyCE_E > 128;
       ap_uint<1> gctBit3 = e_em > 64;
       gctBits = (gctBit3, gctBit2, gctBit1, gctBit0);
     }
 
-    inline void setQualityFlags( bool qualFracCE_E, bool qualFracCoreCE_E, bool qualFracEarlyCE_H, bool saturatedTC, unsigned int shapeQuality, bool saturatedPhi, bool nominalPhi ) {
-      qualFlags = (ap_uint<1>(saturatedTC), ap_uint<1>(qualFracCE_E), ap_uint<1>(qualFracCoreCE_E), ap_uint<1>(qualFracEarlyCE_H), ap_uint<1>(shapeQuality), ap_uint<1>(saturatedPhi), ap_uint<1>(nominalPhi));
+    inline void setQualityFlags( unsigned int e_em_core, unsigned int e_h_early, bool saturatedTC, unsigned int shapeQuality, bool saturatedPhi, bool nominalPhi ) {
+      bool qualFracCE_E = e != 0x3FFFFF && e_em != 0x3FFFFF;
+      bool qualFracCoreCE_E = e_em_core != 0x3FFFFF && e_em != 0x3FFFFF;
+      bool qualFracEarlyCE_H = e_h_early != 0x3FFFFF && e != 0x3FFFFF;
+      qualFlags = (ap_uint<1>(nominalPhi), ap_uint<1>(saturatedPhi), ap_uint<1>(shapeQuality), ap_uint<1>(qualFracEarlyCE_H), ap_uint<1>(qualFracCoreCE_E), ap_uint<1>(qualFracCE_E), ap_uint<1>(saturatedTC) );
     }
   };
 

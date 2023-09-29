@@ -316,7 +316,7 @@ void HGCalHistoClustering::triggerCellToCluster(const HGCalTriggerCellSAShrPtrCo
     cluster->set_wphi2(s_TC_W * tc->phi() * tc->phi());
     cluster->set_wroz2(s_TC_W * tc->rOverZ() * tc->rOverZ());
 
-    const unsigned nTriggerLayers = 36;  // Should get from config/elsewhere in CMSSW
+    const unsigned nTriggerLayers = 34;  // Should get from config/elsewhere in CMSSW
     cluster->set_layerbits(cluster->layerbits() | (((unsigned long int)1) << (nTriggerLayers - triggerLayer)));
     cluster->set_sat_tc(cluster->e() == config_.saturation() || cluster->e_em() == config_.saturation());
     cluster->set_shapeq(1);

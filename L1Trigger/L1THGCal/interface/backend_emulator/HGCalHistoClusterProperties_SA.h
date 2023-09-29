@@ -5,6 +5,7 @@
 #include "L1Trigger/L1THGCal/interface/backend_emulator/CentroidHelper.h"
 #include "L1Trigger/L1THGCal/interface/backend_emulator/HGCalHistoClusteringConfig_SA.h"
 #include "L1Trigger/L1THGCal/interface/backend_emulator/HGCalCluster_SA.h"
+#include "DataFormats/L1THGCal/interface/HGCalCluster_HW.h"
 
 namespace l1thgcfirmware {
 
@@ -26,16 +27,15 @@ namespace l1thgcfirmware {
     void clusterProperties(l1thgcfirmware::HGCalClusterSAPtrCollection& clusterSums) const;
 
     // Helper functions
-    std::pair<unsigned int, unsigned int> sigma_energy(unsigned int N_TC_W,
-                                                       unsigned long int Sum_W2,
-                                                       unsigned int Sum_W) const;
-    std::pair<unsigned int, unsigned int> mean_coordinate(unsigned int Sum_Wc, unsigned int Sum_W) const;
-    std::pair<unsigned int, unsigned int> sigma_coordinate(unsigned int Sum_W,
+    unsigned int sigma_coordinate(unsigned int Sum_W,
                                                            unsigned long int Sum_Wc2,
                                                            unsigned int Sum_Wc,
                                                            double scale = 0) const;
-    std::pair<unsigned int, unsigned int> energy_ratio(unsigned int E_N, unsigned int E_D) const;
+
     std::vector<int> showerLengthProperties(unsigned long int layerBits) const;
+
+    double convertRozToEta( HGCalClusterSAPtr& cluster ) const;
+    double convertSigmaRozRozToSigmaEtaEta( HGCalClusterSAPtr& cluster ) const;
 
     const l1thgcfirmware::ClusterAlgoConfig& config_;
   };

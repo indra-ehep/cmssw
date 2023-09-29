@@ -28,6 +28,7 @@ namespace l1thgcfirmware {
           e_em_(0),
           e_em_core_(0),
           e_h_early_(0),
+          gctBits_(0),
           w_(0),
           n_tc_w_(0),
           w2_(0),
@@ -58,18 +59,16 @@ namespace l1thgcfirmware {
           sigma_phi_fraction_(0),
           sigma_eta_quotient_(0),
           sigma_eta_fraction_(0),
-          sigma_roz_quotient_(0),
-          sigma_roz_fraction_(0),
+          sigma_roz_(0),
           first_layer_(0),
           last_layer_(0),
           shower_len_(0),
           core_shower_len_(0),
-          e_em_over_e_quotient_(0),
-          e_em_over_e_fraction_(0),
-          e_em_core_over_e_em_quotient_(0),
-          e_em_core_over_e_em_fraction_(0),
-          e_h_early_over_e_quotient_(0),
-          e_h_early_over_e_fraction_(0) {}
+          fractionInCE_E_(0),
+          fractionInCoreCE_E_(0),
+          fractionInEarlyCE_E_(0) {
+            hwCluster_.clear();
+          }
 
     ~HGCalCluster() {}
 
@@ -100,6 +99,7 @@ namespace l1thgcfirmware {
     void set_e_em(unsigned int e_em) { e_em_ = e_em; }
     void set_e_em_core(unsigned int e_em_core) { e_em_core_ = e_em_core; }
     void set_e_h_early(unsigned int e_h_early) { e_h_early_ = e_h_early; }
+    void setGCTBits( unsigned int bits ) { gctBits_ = bits; }
     void set_w(unsigned int w) { w_ = w; }
     void set_n_tc_w(unsigned int n_tc_w) { n_tc_w_ = n_tc_w; }
     void set_w2(unsigned long int w2) { w2_ = w2; }
@@ -131,18 +131,17 @@ namespace l1thgcfirmware {
     void set_sigma_phi_fraction(unsigned long int sigma_phi_fraction) { sigma_phi_fraction_ = sigma_phi_fraction; }
     void set_sigma_eta_quotient(unsigned long int sigma_eta_quotient) { sigma_eta_quotient_ = sigma_eta_quotient; }
     void set_sigma_eta_fraction(unsigned long int sigma_eta_fraction) { sigma_eta_fraction_ = sigma_eta_fraction; }
-    void set_sigma_roz_quotient(unsigned long int sigma_roz_quotient) { sigma_roz_quotient_ = sigma_roz_quotient; }
-    void set_sigma_roz_fraction(unsigned long int sigma_roz_fraction) { sigma_roz_fraction_ = sigma_roz_fraction; }
+    void set_sigma_roz(unsigned long int sigma_roz) { sigma_roz_ = sigma_roz; }
     void set_firstLayer(unsigned long int FirstLayer) { first_layer_ = FirstLayer; }
     void set_lastLayer(unsigned long int LastLayer) { last_layer_ = LastLayer; }
     void set_showerLen(unsigned long int ShowerLen) { shower_len_ = ShowerLen; }
     void set_coreShowerLen(unsigned long int CoreShowerLen) { core_shower_len_ = CoreShowerLen; }
-    void set_e_em_over_e_quotient(unsigned long int quotient) { e_em_over_e_quotient_ = quotient; }
-    void set_e_em_over_e_fraction(unsigned long int fraction) { e_em_over_e_fraction_ = fraction; }
-    void set_e_em_core_over_e_em_quotient(unsigned long int quotient) { e_em_core_over_e_em_quotient_ = quotient; }
-    void set_e_em_core_over_e_em_fraction(unsigned long int fraction) { e_em_core_over_e_em_fraction_ = fraction; }
-    void set_e_h_early_over_e_quotient(unsigned long int quotient) { e_h_early_over_e_quotient_ = quotient; }
-    void set_e_h_early_over_e_fraction(unsigned long int fraction) { e_h_early_over_e_fraction_ = fraction; }
+
+
+
+    void set_fractionInCE_E(unsigned int fraction ){ fractionInCE_E_ = fraction; }
+    void set_fractionInCoreCE_E(unsigned int fraction ){ fractionInCoreCE_E_ = fraction; }
+    void set_fractionInEarlyCE_E(unsigned int fraction ){ fractionInEarlyCE_E_ = fraction; }
 
     void add_constituent(HGCalTriggerCellSAShrPtr constituent) { constituents_.emplace_back(constituent); }
 
@@ -157,6 +156,7 @@ namespace l1thgcfirmware {
     unsigned int e_em() const { return e_em_; }
     unsigned int e_em_core() const { return e_em_core_; }
     unsigned int e_h_early() const { return e_h_early_; }
+    unsigned int gctBits() const { return gctBits_; }
     unsigned int w() const { return w_; }
     unsigned int n_tc_w() const { return n_tc_w_; }
     unsigned long int w2() const { return w2_; }
@@ -188,34 +188,23 @@ namespace l1thgcfirmware {
     unsigned long int sigma_phi_fraction() const { return sigma_phi_fraction_; }
     unsigned long int sigma_eta_quotient() const { return sigma_eta_quotient_; }
     unsigned long int sigma_eta_fraction() const { return sigma_eta_fraction_; }
-    unsigned long int sigma_roz_quotient() const { return sigma_roz_quotient_; }
-    unsigned long int sigma_roz_fraction() const { return sigma_roz_fraction_; }
+    unsigned long int sigma_roz() const { return sigma_roz_; }
     unsigned long int firstLayer() const { return first_layer_; }
     unsigned long int lastLayer() const { return last_layer_; }
     unsigned long int showerLen() const { return shower_len_; }
     unsigned long int coreShowerLen() const { return core_shower_len_; }
-    unsigned long int e_em_over_e_quotient() const { return e_em_over_e_quotient_; }
-    unsigned long int e_em_over_e_fraction() const { return e_em_over_e_fraction_; }
-    unsigned long int e_em_core_over_e_em_quotient() const { return e_em_core_over_e_em_quotient_; }
-    unsigned long int e_em_core_over_e_em_fraction() const { return e_em_core_over_e_em_fraction_; }
-    unsigned long int e_h_early_over_e_quotient() const { return e_h_early_over_e_quotient_; }
-    unsigned long int e_h_early_over_e_fraction() const { return e_h_early_over_e_fraction_; }
+
+    unsigned int fractionInCE_E() const { return fractionInCE_E_; }
+    unsigned int fractionInCoreCE_E() const { return fractionInCoreCE_E_; }
+    unsigned int fractionInEarlyCE_E() const { return fractionInEarlyCE_E_; }
 
     HGCalTriggerCellSAShrPtrCollection& constituents() { return constituents_; }
 
     // Operators
     const HGCalCluster& operator+=(HGCalCluster& hc);
 
-    // Format data into firmware representation
-    HGCalCluster_HW convertToL1TFormat( const ClusterAlgoConfig& config );
-    void formatFirstWord( const ClusterAlgoConfig& config, HGCalCluster_HW& hwCluster );
-    void formatSecondWord( const ClusterAlgoConfig& config, HGCalCluster_HW& hwCluster );
-    void formatThirdWord( const ClusterAlgoConfig& config, HGCalCluster_HW& hwCluster );
-    void formatFourthWord( const ClusterAlgoConfig& config, HGCalCluster_HW& hwCluster );
-
-    // Conversion of roz to eta (and sigma roz)
-    double convertRozToEta( const ClusterAlgoConfig& config );
-    double convertSigmaRozRozToSigmaEtaEta( const ClusterAlgoConfig& config );
+    // Object in firmware representation
+    HGCalCluster_HW& hwCluster() { return hwCluster_; }
 
     // Format data into firmware representation
     void clearClusterSumWords();
@@ -233,6 +222,9 @@ namespace l1thgcfirmware {
     unsigned int e_em_;
     unsigned int e_em_core_;
     unsigned int e_h_early_;
+
+    unsigned int gctBits_;
+
     unsigned int w_;
     unsigned int n_tc_w_;
     unsigned long int w2_;
@@ -263,25 +255,22 @@ namespace l1thgcfirmware {
     unsigned long int sigma_phi_fraction_;
     unsigned long int sigma_eta_quotient_;
     unsigned long int sigma_eta_fraction_;
-    unsigned long int sigma_roz_quotient_;
-    unsigned long int sigma_roz_fraction_;
+    unsigned long int sigma_roz_;
     unsigned long int first_layer_;
     unsigned long int last_layer_;
     unsigned long int shower_len_;
     unsigned long int core_shower_len_;
-    unsigned long int e_em_over_e_quotient_;
-    unsigned long int e_em_over_e_fraction_;
-    unsigned long int e_em_core_over_e_em_quotient_;
-    unsigned long int e_em_core_over_e_em_fraction_;
-    unsigned long int e_h_early_over_e_quotient_;
-    unsigned long int e_h_early_over_e_fraction_;
+
+    unsigned int fractionInCE_E_;
+    unsigned int fractionInCoreCE_E_;
+    unsigned int fractionInEarlyCE_E_;
 
     // Extra variables, not available in firmware
     // Perhaps move to separate "extra" class?
     HGCalTriggerCellSAShrPtrCollection constituents_;
 
     // Firmware representation of cluster as sent on links to L1T
-    // ClusterWords packedData_;
+    HGCalCluster_HW hwCluster_;
 
     // Firmware representation of cluster sum (input to cluster properties)
     ClusterSumWords packedData_clustersSums_;

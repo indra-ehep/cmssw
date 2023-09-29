@@ -69,125 +69,67 @@ void HGCalHistoClusterProperties::clusterSum(const HGCalClusterSAPtrCollection& 
 
 // Calculates properties of clusters from accumulated quantities
 void HGCalHistoClusterProperties::clusterProperties(HGCalClusterSAPtrCollection& clusterSums) const {
-  unsigned int nTCs = 0;
+
   for (auto& c : clusterSums) {
 
-    if (c->n_tc_w() == 0)
-      continue;
-    std::pair<unsigned int, unsigned int> sigmaEnergy = sigma_energy(c->n_tc_w(), c->w2(), c->w());
-    c->set_sigma_e_quotient(sigmaEnergy.first);
-    c->set_sigma_e_fraction(sigmaEnergy.second);
-    std::pair<unsigned int, unsigned int> Mean_z = mean_coordinate(c->wz(), c->w());
-    c->set_mean_z_quotient(Mean_z.first);
-    c->set_mean_z_fraction(Mean_z.second);
-    std::pair<unsigned int, unsigned int> Mean_phi = mean_coordinate(c->wphi(), c->w());
-    c->set_mean_phi_quotient(Mean_phi.first);
-    c->set_mean_phi_fraction(Mean_phi.second);
-    std::pair<unsigned int, unsigned int> Mean_eta = mean_coordinate(c->weta(), c->w());
-    c->set_mean_eta_quotient(Mean_eta.first);
-    c->set_mean_eta_fraction(Mean_eta.second);
-    std::pair<unsigned int, unsigned int> Mean_roz = mean_coordinate(c->wroz(), c->w());
-    c->set_mean_roz_quotient(Mean_roz.first);
-    c->set_mean_roz_fraction(Mean_roz.second);
-
-    const double sigma_z_scale = 0.08225179463624954;
-    std::pair<unsigned int, unsigned int> Sigma_z = sigma_coordinate(c->w(), c->wz2(), c->wz(), sigma_z_scale);
-    c->set_sigma_z_quotient(Sigma_z.first);
-    c->set_sigma_z_fraction(Sigma_z.second);
-
-    const double sigma_phi_scale = 0.907465934753418;
-    std::pair<unsigned int, unsigned int> Sigma_phi = sigma_coordinate(c->w(), c->wphi2(), c->wphi(), sigma_phi_scale);
-    c->set_sigma_phi_quotient(Sigma_phi.first);
-    c->set_sigma_phi_fraction(Sigma_phi.second);
-
-    std::pair<unsigned int, unsigned int> Sigma_eta = sigma_coordinate(c->w(), c->weta2(), c->weta());
-    c->set_sigma_eta_quotient(Sigma_eta.first);
-    c->set_sigma_eta_fraction(Sigma_eta.second);
-
-    const double sigma_roz_scale = 0.5073223114013672;
-    std::pair<unsigned int, unsigned int> Sigma_roz = sigma_coordinate(c->w(), c->wroz2(), c->wroz(), sigma_roz_scale);
-    c->set_sigma_roz_quotient(Sigma_roz.first);
-    c->set_sigma_roz_fraction(Sigma_roz.second);
+    HGCalCluster_HW& hwCluster = c->hwCluster();
+    hwCluster.e = Scales::HGCaltoL1_et(c->e());
+    hwCluster.e_em = Scales::HGCaltoL1_et(c->e_em());
+    hwCluster.fractionInCE_E = Scales::makeL1EFraction(c->e_em(), c->e());
+    hwCluster.fractionInCoreCE_E = Scales::makeL1EFraction(c->e_em_core(), c->e_em());
+    hwCluster.fractionInEarlyCE_E = Scales::makeL1EFraction(c->e_h_early(), c->e());
+    hwCluster.setGCTBits();
     std::vector<int> layeroutput = showerLengthProperties(c->layerbits());
     c->set_firstLayer(layeroutput[0]);
     c->set_lastLayer(layeroutput[1]);
     c->set_showerLen(layeroutput[2]);
     c->set_coreShowerLen(layeroutput[3]);
-    std::pair<unsigned int, unsigned int> e_em_over_e = energy_ratio(c->e_em(), c->e());
-    c->set_e_em_over_e_quotient(e_em_over_e.first);
-    c->set_e_em_over_e_fraction(e_em_over_e.second);
-    std::pair<unsigned int, unsigned int> e_em_core_over_e_em = energy_ratio(c->e_em_core(), c->e());
-    c->set_e_em_core_over_e_em_quotient(e_em_core_over_e_em.first);
-    c->set_e_em_core_over_e_em_fraction(e_em_core_over_e_em.second);
-    std::pair<unsigned int, unsigned int> e_h_early_over_e = energy_ratio(c->e_h_early(), c->e());
-    c->set_e_h_early_over_e_quotient(e_h_early_over_e.first);
-    c->set_e_h_early_over_e_fraction(e_h_early_over_e.second);
+    hwCluster.firstLayer = c->firstLayer();
+    hwCluster.lastLayer = c->lastLayer();
+    hwCluster.showerLength = c->showerLen();
+    hwCluster.coreShowerLength = c->coreShowerLen();
+    hwCluster.nTC = c->n_tc();
 
-    nTCs += c->n_tc();
+    if (c->n_tc_w() == 0)
+      continue;
+
+    hwCluster.w_eta = convertRozToEta( c );
+    bool saturatedPhi = false;
+    bool nominalPhi = false;
+    hwCluster.w_phi = Scales::HGCaltoL1_phi(float(c->wphi())/c->w(), saturatedPhi, nominalPhi);
+    hwCluster.w_z = Scales::HGCaltoL1_z( float(c->wz()) / c->w() );
+
+    // Quality flags are placeholders at the moment
+    hwCluster.setQualityFlags(Scales::HGCaltoL1_et(c->e_em_core()), Scales::HGCaltoL1_et(c->e_h_early()), c->sat_tc(), c->shapeq(), saturatedPhi, nominalPhi);
+
+    const double sigma_E_scale = 0.008982944302260876;
+    hwCluster.sigma_E = sigma_coordinate(c->n_tc_w(), c->w2(), c->w(), sigma_E_scale);
+
+    const double sigma_z_scale = 0.08225179463624954;
+    hwCluster.sigma_z = sigma_coordinate(c->w(), c->wz2(), c->wz(), sigma_z_scale);
+
+    const double sigma_phi_scale = 0.907465934753418;
+    hwCluster.sigma_phi = sigma_coordinate(c->w(), c->wphi2(), c->wphi(), sigma_phi_scale);
+
+    hwCluster.sigma_eta = convertSigmaRozRozToSigmaEtaEta(c);
+
+    const double sigma_roz_scale = 0.5073223114013672;
+    unsigned int sigma_roz = sigma_coordinate(c->w(), c->wroz2(), c->wroz(), sigma_roz_scale);
+    // Emulation of a bug in firmware
+    // if ( sigma_roz >=256 ) sigma_roz -= 256;
+    while (sigma_roz >= 256) sigma_roz -= 256;
+    if ( sigma_roz > 127 ) sigma_roz = 127;
+    hwCluster.sigma_roz = sigma_roz;
   }
 }
 
-std::pair<unsigned int, unsigned int> HGCalHistoClusterProperties::sigma_energy(unsigned int N_TC_W,
-                                                                                unsigned long int Sum_W2,
-                                                                                unsigned int Sum_W) const {
-  unsigned long int N = N_TC_W * Sum_W2 - pow(Sum_W, 2);
-  unsigned long int D = pow(N_TC_W, 2);
-  if (D == 0) {
-    return {0, 0};
-  }
-  double intpart;
-  const unsigned shift = 2;  // Shift by one bit, pow(2,1)
-
-  double sigma_e = sqrt(N / D);
-  const double sigma_e_scale = 0.008982944302260876;
-  sigma_e *= sigma_e_scale;
-
-  double frac = modf(sigma_e, &intpart) * shift;
-
-
-  return {(unsigned int)intpart, (unsigned int)frac};
-}
-
-std::pair<unsigned int, unsigned int> HGCalHistoClusterProperties::mean_coordinate(unsigned int Sum_Wc,
-                                                                                   unsigned int Sum_W) const {
-  if (Sum_W == 0) {
-    return {0, 0};
-  }
-  double intpart;
-  const unsigned shift = 4;  // Shift by one bit, pow(2,2)
-  double frac = modf((double)Sum_Wc / Sum_W, &intpart) * shift;
-  return {(unsigned int)intpart, (unsigned int)frac};
-}
-
-std::pair<unsigned int, unsigned int> HGCalHistoClusterProperties::sigma_coordinate(unsigned int Sum_W,
-                                                                                    unsigned long int Sum_Wc2,
-                                                                                    unsigned int Sum_Wc,
-                                                                                    double scale ) const {
-  unsigned long int N = Sum_W * Sum_Wc2 - pow(Sum_Wc, 2);
-  unsigned long int D = pow(Sum_W, 2);
-  if (D == 0) {
-    return {0, 0};
-  }
-  double intpart;
-  const unsigned shift = 2;  // Shift by one bit, pow(2,1)
-
-  double sigma_coord = sqrt(N / D);
-  sigma_coord *= scale;
-  double frac = modf(sigma_coord, &intpart) * shift;
-  // std::cout << "Sigma coord : " << sigma_coord << " " << intpart << " " << frac << " " <<  modf(sigma_coord, &intpart) << " " << shift << std::endl;
-  return {(unsigned int)intpart, (unsigned int)frac};
-}
-
-std::pair<unsigned int, unsigned int> HGCalHistoClusterProperties::energy_ratio(unsigned int e_N,
-                                                                                unsigned int e_D) const {
-  if (e_D == 0) {
-    return {0, 0};
-  } else {
-    double intpart;
-    const unsigned shift = 256;  // Shift by eight bit, pow(2,8)
-    double frac = modf((double)e_N / e_D, &intpart) * shift;
-    return {(unsigned int)intpart, (unsigned int)frac};
-  }
+unsigned int HGCalHistoClusterProperties::sigma_coordinate(unsigned int w,
+                                                            unsigned long int wc2,
+                                                            unsigned int wc,
+                                                            double scale ) const {
+  if ( w == 0 ) return 0;
+  unsigned int sigma = round(sqrt( (float(w)*float(wc2) - float(wc) * float(wc))  / ( float(w) * float(w) ) ) * scale);
+  return sigma;
 }
 
 std::vector<int> HGCalHistoClusterProperties::showerLengthProperties(unsigned long int layerBits) const {
@@ -197,24 +139,62 @@ std::vector<int> HGCalHistoClusterProperties::showerLengthProperties(unsigned lo
   int lastLayer = 0;
   std::vector<int> layerBits_array;
 
-  for (unsigned int idx = 0; idx < config_.nTriggerLayers(); idx++) {
-    if ((layerBits & (1L << (config_.nTriggerLayers() - 1 - idx))) >= 1L) {
-      if (!firstLayerFound) {
-        firstLayer = idx + 1;
-        firstLayerFound = true;
+  bitset<34> layerBitsBitset(layerBits);
+  for (size_t i = 0; i < layerBitsBitset.size(); ++i) {
+      bool bit = layerBitsBitset[34-1-i];
+      if ( bit ) {
+        if ( !firstLayerFound ) {
+          firstLayer = i + 1;
+          firstLayerFound = true;
+        }
+        lastLayer = i+1;
+        counter += 1;
+      } else {
+        layerBits_array.push_back(counter);
+        counter = 0;
       }
-      lastLayer = idx + 1;
-      counter += 1;
-    } else {
-      layerBits_array.push_back(counter);
-      counter = 0;
-    }
   }
+
   int showerLen = lastLayer - firstLayer + 1;
   int coreShowerLen = config_.nTriggerLayers();
   if (!layerBits_array.empty()) {
     coreShowerLen = *std::max_element(layerBits_array.begin(), layerBits_array.end());
   }
-
   return {firstLayer, lastLayer, showerLen, coreShowerLen};
+}
+
+double HGCalHistoClusterProperties::convertRozToEta( HGCalClusterSAPtr& cluster ) const {
+  // TODO : named constants for magic numbers
+  double roz = double(cluster->wroz())/cluster->w();
+  if ( roz < 1026.9376220703125 ) roz = 1026.9376220703125;
+  else if ( roz > 5412.17138671875 ) roz = 5412.17138671875;
+  roz -= 1026.9376220703125;
+  roz *= 0.233510936;
+  roz = int(round(roz));
+  if ( roz > 1023 ) roz = 1023;
+  return config_.rozToEtaLUT(roz);
+}
+
+double HGCalHistoClusterProperties::convertSigmaRozRozToSigmaEtaEta( HGCalClusterSAPtr& cluster ) const {
+  // TODO : named constants for magic numbers
+  // Sigma eta eta calculation
+  double roz = cluster->wroz()/cluster->w();
+  const double min_roz = 809.9324340820312;
+  const double max_roz = 4996.79833984375;
+  if ( roz < min_roz ) roz = min_roz;
+  else if ( roz > max_roz ) roz = max_roz;
+  roz -= min_roz;
+  const double scale = 0.015286154113709927;
+  roz *= scale;
+  roz = int(round(roz));
+  if ( roz > 63 ) roz = 63;
+
+  const double sigma_roz_scale = 0.220451220870018;
+  double sigmaRoz = sigma_coordinate(cluster->w(), cluster->wroz2(), cluster->wroz(), sigma_roz_scale);
+
+  sigmaRoz = int(round(sigmaRoz));
+  if ( sigmaRoz > 63 ) sigmaRoz = 63;
+  unsigned int lutAddress = roz * 64 + sigmaRoz;
+  if ( lutAddress >= 4096 ) lutAddress = 4095;
+  return config_.sigmaRozToSigmaEtaLUT(lutAddress);
 }
