@@ -128,7 +128,7 @@ void HGCalRawToDigi::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
 
     auto* ptr = fed_data.data();
     size_t fed_size = fed_data.size();
-    std::vector<uint32_t> data_32bit;
+    std::vector<uint32_t> data_32bit;    
     for (size_t i = 0; i < fed_size; i += 4){
       data_32bit.emplace_back( (((*(ptr + i) & 0xff) << 0) +
                                 (((i + 1) < fed_size) ? ((*(ptr + i + 1) & 0xff) << 8) : 0) +

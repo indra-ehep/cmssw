@@ -57,7 +57,7 @@ HGCalModuleTreeReader::HGCalModuleTreeReader(const EmulatorParameters& params,
     EventId key{(uint32_t)event.eventcounter, (uint32_t)event.bxcounter, (uint32_t)event.orbitcounter};
     
     //add meta data
-    HGCalTestSystemMetaData md(0,event.trigtime,event.trigwidth);
+    HGCalTestSystemMetaData md(0,0,event.trigtime,event.trigwidth);
     metadata_[erxKey].push_back( std::tuple<EventId,HGCalTestSystemMetaData>(key,md) );
     
     //fill the data
@@ -80,17 +80,11 @@ HGCalModuleTreeReader::HGCalModuleTreeReader(const EmulatorParameters& params,
 
     // next 37 words are channel data
     for (size_t i = 2; i < 2 + params_.num_channels_per_erx; i++) {
-      HGCROCChannelDataFrame<uint32_t> frame(0, event.daqdata->at(i));
-      const auto tctp = static_cast<ToTStatus>(frame.tctp());
-      newInput.tctp.push_back(tctp);
-      newInput.adcm.push_back(frame.adcm1());
-      newInput.adc.push_back(tctp == ToTStatus::ZeroSuppressed ? frame.adc() : 0);
-      newInput.tot.push_back(tctp == ToTStatus::ZeroSuppressed ? frame.rawtot() : 0);
-      newInput.toa.push_back(frame.toa());      
+      newInput.rawROCword.push_back(event.daqdata->at(i));
     }
 
     // copy CRC32
-    newInput.crc32 = event.daqdata->at(39);
+    newInput.crc32 = event.daqdata->at(params_.num_channels_per_erx+2);
 
     //add data
     data_[erxKey].push_back( std::tuple<EventId,ERxData>(key,newInput) );

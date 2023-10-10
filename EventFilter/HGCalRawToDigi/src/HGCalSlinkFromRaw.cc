@@ -97,6 +97,7 @@ std::unique_ptr<FEDRawDataCollection> SlinkFromRaw::next() {
       if (rTrgEvent->slinkBoe()->eventId() == eventId_ && rTrgEvent->slinkEoe()->bxId() == bxId_ &&
           rTrgEvent->slinkEoe()->orbitId() == orbitId_) {
         metaData_.trigType_ = rTrgEvent->slinkBoe()->l1aType();
+        metaData_.trigSubType_ = rTrgEvent->slinkBoe()->l1aSubType();        
         readTriggerData(rTrgEvent);
         break;
       } else {
@@ -149,7 +150,7 @@ void SlinkFromRaw::readTriggerData(const hgcal_slinkfromraw::RecordRunning *rTrg
 
   if (rTrgEvent && rTrgEvent->payloadLength() > 0) {
     auto p = (const uint64_t *)rTrgEvent;
-    int length = 0;
+    uint32_t length = 0;
     p += 4;  // (1 record header + 2 slink header + 1 trigger readout header)
     for (unsigned iblock = 0; iblock < 4 && p < (const uint64_t *)rTrgEvent + rTrgEvent->payloadLength(); ++iblock) {
       LogDebug("SlinkFromRaw") << "Header: " << std::hex << std::setfill('0') << "0x" << *p << std::endl;
@@ -161,7 +162,13 @@ void SlinkFromRaw::readTriggerData(const hgcal_slinkfromraw::RecordRunning *rTrg
 					     << " BOE header: 0x" << rTrgEvent->slinkBoe()->boeHeader();
       }
       length = *p & pkt_mask;
-      if (iblock == 2) {
+      if (iblock <2) {
+        //copy from *(p+1) to *(p+length) (i.e. discard the fecafecafe... word) ?
+        //std::cout << std::dec << iblock << std::endl;
+        //for(uint32_t k=1; k<length+1; k++)
+        //  std::cout << "\t 0x" << std::hex << *(p+k) << std::endl;
+      }
+      else if (iblock == 2) {
         // scintillator
         // the length should be 9 (BX) * 5 (64b word)
         // only the 1st 64b word is used; the last (5th) word is a separator
