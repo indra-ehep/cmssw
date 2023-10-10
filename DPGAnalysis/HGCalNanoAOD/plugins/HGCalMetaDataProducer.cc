@@ -68,6 +68,7 @@ void HGCalMetaDataTableProducer::produce(edm::Event& iEvent, const edm::EventSet
   auto out = std::make_unique<nanoaod::FlatTable>(1,"hgcMetadata",true);
 
   out->addColumnValue<uint32_t>("trigType", info.trigType_, "Trig Type");
+  out->addColumnValue<uint32_t>("trigSubType", info.trigSubType_, "Trig Sub-Type");
   out->addColumnValue<uint32_t>("trigTime", info.trigTime_, "Trig Time");
   out->addColumnValue<uint32_t>("trigWidth", info.trigWidth_, "Trig Width");
   out->addColumnValue<uint32_t>("injcalib", info.injcalib_, "injcalib");

@@ -174,24 +174,32 @@ namespace hgcal {
       bool bit_e = false;  // did unmasked stat error bits associated with the eRx cause the sub-packet to be supressed?
       auto erx_header = econd::eRxSubPacketHeader(stat, hamming_check, bit_e, jt.second.cm0, jt.second.cm1, chmap);
       erx_data.insert(erx_data.end(), erx_header.begin(), erx_header.end());
-      if (jt.second.adc.size() < econd_params.num_channels_per_erx) {
+      if (jt.second.adc.size() < econd_params.num_channels_per_erx && jt.second.rawROCword.size() < econd_params.num_channels_per_erx) {
         edm::LogError("HGCalFrameGenerator:generateERxData")
             << "Data multiplicity too low (" << jt.second.adc.size() << ") to emulate "
             << econd_params.num_channels_per_erx << " ECON-D channel(s).";
         continue;
       }
+
       // insert eRx payloads (integrating all readout channels)
-      const auto erx_chan_data = econd::produceERxData(chmap,
-                                                       jt.second,
-                                                       true,  // passZS
-                                                       true,  // passZSm1
-                                                       true,  // hasToA
-                                                       econd_params.characterisation_mode);
-      erx_data.insert(erx_data.end(), erx_chan_data.begin(), erx_chan_data.end());
+      // if RAW roc words were given instead of individual fields copy directly (ECON-D passthrought mode)
+      if(jt.second.rawROCword.size()>0 && jt.second.adc.size()==0) {
+        erx_data.insert(erx_data.end(), jt.second.rawROCword.begin(), jt.second.rawROCword.end());
+      } else {
+        const auto erx_chan_data = econd::produceERxData(chmap,
+                                                         jt.second,
+                                                         true,  // passZS
+                                                         true,  // passZSm1
+                                                         true,  // hasToA
+                                                         econd_params.characterisation_mode);
+        erx_data.insert(erx_data.end(), erx_chan_data.begin(), erx_chan_data.end());
+      }
+      
       enabled_channels.emplace_back(chmap);
     }
 
     LogDebug("HGCalFrameGenerator").log([&erx_data](auto& log) { printWords(log, "erx", erx_data); });
+    
     return erx_data;
   }
 
@@ -217,9 +225,6 @@ namespace hgcal {
     auto header_bits = generateStatusBits(econd_id);
     std::vector<econd::ERxChannelEnable> enabled_ch_per_erx;
     auto erx_payload = generateERxData(econd_id, event.second, enabled_ch_per_erx);
-
-    //PEDRO : FIX this in pion runs
-    //if( erx_payload.size() != 234) return produceECONEvent(econd_id,cb_id);
 
     // ECON-D event content was just created, now prepend packet header
     const uint8_t hamming = 0, rr = 0;
