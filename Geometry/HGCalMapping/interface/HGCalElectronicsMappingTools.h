@@ -28,7 +28,7 @@ namespace hgcal {
   /**
      @short formula to get ECOND e-Rx for a given ROC chip/half
    */
-  uint16_t getEcondErxFor(uint16_t chip,uint16_t half) { return chip*2+half; }
+  constexpr uint16_t getEcondErxFor(uint16_t chip, uint16_t half) { return chip * 2 + half; }
 
   /**
      returns a map of electronics id to si channel info

@@ -24,16 +24,20 @@ process.load('Geometry.HGCalMapping.hgCalSiModuleInfoESSource_cfi')
 
 # HGCal DQM
 process.load('DQM.HGCal.hgCalDigisClient_cfi')
+process.load('DQM.HGCal.hgCalTriggerClient_cfi')
 process.load('DQM.HGCal.hgCalDigisClientHarvester_cfi')
 process.hgCalDigisClient.Prescale = options.prescale
 process.hgCalDigisClient.MinimumNumEvents = options.minEvents
+process.hgCalTriggerClient.Prescale = options.prescale
+process.hgCalTriggerClient.MinimumNumEvents = options.minEvents
 
 process.DQMStore = cms.Service("DQMStore")
 process.load("DQMServices.FileIO.DQMFileSaverOnline_cfi")
 process.dqmSaver.tag = 'HGCAL'
 
 # path
-process.p = cms.Path(process.hgCalDigisClient * process.hgCalDigisClientHarvester * process.dqmSaver)
+process.p = cms.Path(
+    process.hgCalDigisClient * process.hgCalTriggerClient * process.hgCalDigisClientHarvester * process.dqmSaver)
 
 # configure test beam conditions
 from DPGAnalysis.HGCalTools.tb2023_cfi import configTBConditions, addPerformanceReports

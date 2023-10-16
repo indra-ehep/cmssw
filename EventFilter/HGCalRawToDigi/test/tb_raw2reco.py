@@ -295,8 +295,10 @@ if options.storeRAWOutput:
 
 if options.dqmOnly:
     process.load('DQM.HGCal.hgCalDigisClient_cfi')
+    process.load('DQM.HGCal.hgCalTriggerClient_cfi')
     process.load('DQM.HGCal.hgCalDigisClientHarvester_cfi')
     process.hgCalDigisClient.Prescale = 1000
+    process.hgCalTriggerClient.Prescale = 1000
 
     process.DQMStore = cms.Service("DQMStore")
     process.load("DQMServices.FileIO.DQMFileSaverOnline_cfi")
@@ -306,7 +308,7 @@ if options.dqmOnly:
     process.p = cms.Path(
         process.hgcalEmulatedSlinkRawData * process.hgCalEmptyEventFilter  # RAW GENERATION (filtered on empty)
         * process.hgcalDigis  # RAW->DIGI
-        * process.hgCalDigisClient * process.hgCalDigisClientHarvester * process.dqmSaver  # DQM
+        * process.hgCalDigisClient * process.hgCalTriggerClient * process.hgCalDigisClientHarvester * process.dqmSaver  # DQM
     )
     process.outpath = cms.EndPath()
 
@@ -316,7 +318,7 @@ configTBConditions(process, options.conditions)
 addPerformanceReports(process)
 
 
-econd_id=0
+econd_id = 0
 for econd in process.hgcalEmulatedSlinkRawData.slinkParams.ECONDs:
     print('ECON-D {}: active? {}, enabled eRxs: {}, number of channels/eRx: {}, passthrough? {}, characterisation? {}'.format(
         econd_id, bool(econd.active),
