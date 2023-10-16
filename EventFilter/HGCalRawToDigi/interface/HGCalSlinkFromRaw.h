@@ -96,6 +96,8 @@ namespace hgcal {
     std::unique_ptr<FEDRawDataCollection> next() override;
     HGCalTestSystemMetaData nextMetaData() override { return metaData_; }
 
+    std::unique_ptr<FEDRawDataCollection> nextTriggerData();
+
   private:
     void readTriggerData(const hgcal_slinkfromraw::RecordRunning *);
 
@@ -107,6 +109,8 @@ namespace hgcal {
     uint64_t eventId_ = 0;
     uint16_t bxId_ = 0;
     uint32_t orbitId_ = 0;
+
+    const hgcal_slinkfromraw::RecordRunning *rTrgEvent_ = nullptr;
   };
 
 }  // namespace hgcal

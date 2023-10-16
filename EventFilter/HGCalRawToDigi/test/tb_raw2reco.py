@@ -15,6 +15,8 @@ options.register('debugModules', '*', VarParsing.multiplicity.list, VarParsing.v
                  "debugging modules, default=['*']")
 options.register('dumpFRD', False, VarParsing.multiplicity.singleton, VarParsing.varType.int,
                  "also dump the FEDRawData content")
+options.register('dumpTrigFRD', False, VarParsing.multiplicity.singleton, VarParsing.varType.int,
+                 "also dump the trigger FEDRawData content")
 options.register('numCaptureBlocks', 1, VarParsing.multiplicity.singleton, VarParsing.varType.int,
                  "number of capture blocks to emulate")
 options.register('numECONDs', 1, VarParsing.multiplicity.singleton, VarParsing.varType.int,
@@ -257,6 +259,13 @@ if options.dumpFRD:
                                   )
     process.p *= process.dump
 
+if options.dumpTrigFRD:
+    process.dumpTrig = cms.EDAnalyzer("DumpFEDRawDataProduct",
+                                      label=cms.untracked.InputTag('hgcalEmulatedSlinkRawData', 'hgcalTriggerRawData'),
+                                      feds=cms.untracked.vint32(0),
+                                      dumpPayload=cms.untracked.bool(True)
+                                      )
+    process.p *= process.dumpTrig
 
 # output
 process.outpath = cms.EndPath()

@@ -45,6 +45,7 @@ private:
   const bool store_fed_header_trailer_;
   std::string emul_type_;
   const edm::EDPutTokenT<FEDRawDataCollection> fedRawToken_;
+  const edm::EDPutTokenT<FEDRawDataCollection> trigRawToken_;
   const edm::EDPutTokenT<HGCalTestSystemMetaData> metadataToken_;
   edm::Service<edm::RandomNumberGenerator> rng_;
   edm::EDPutTokenT<HGCalSlinkEmulatorInfo> fedEmulInfoToken_;
@@ -61,6 +62,7 @@ HGCalSlinkEmulator::HGCalSlinkEmulator(const edm::ParameterSet& iConfig)
       store_fed_header_trailer_(iConfig.getParameter<bool>("fedHeaderTrailer")),
       emul_type_(iConfig.getParameter<std::string>("emulatorType")),
       fedRawToken_(produces<FEDRawDataCollection>("hgcalFEDRawData")),
+      trigRawToken_(produces<FEDRawDataCollection>("hgcalTriggerRawData")),
       metadataToken_(produces<HGCalTestSystemMetaData>("hgcalMetaData")),
       frame_gen_(iConfig),
       configToken_(esConsumes<HGCalCondSerializableConfig,HGCalCondSerializableConfigRcd,edm::Transition::BeginRun>(
@@ -98,11 +100,13 @@ void HGCalSlinkEmulator::produce(edm::Event& iEvent, const edm::EventSetup& iSet
 
   //produce raw / meta data
   std::unique_ptr<FEDRawDataCollection> raw_data;
+  std::unique_ptr<FEDRawDataCollection> raw_trig_data;
   HGCalTestSystemMetaData meta_data;
 
   // try{
   if(emul_type_=="slinkfromraw") {
     raw_data = raw_reader_->next();
+    raw_trig_data = raw_reader_->nextTriggerData();
     meta_data = raw_reader_->nextMetaData();
   } else {
     raw_data = produceWithoutSlink(iEvent,iSetup);
@@ -121,6 +125,7 @@ void HGCalSlinkEmulator::produce(edm::Event& iEvent, const edm::EventSetup& iSet
   meta_data.injcalib_ = moduleConfig_.injcalib;
 
   iEvent.emplace(fedRawToken_, std::move(*raw_data));
+  iEvent.emplace(trigRawToken_, std::move(*raw_trig_data));
   iEvent.emplace(metadataToken_, std::move(meta_data));
 }
 

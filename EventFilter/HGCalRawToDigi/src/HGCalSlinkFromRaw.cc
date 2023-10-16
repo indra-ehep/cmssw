@@ -10,7 +10,7 @@ SlinkFromRaw::SlinkFromRaw(const edm::ParameterSet &iConfig)
   auto inputfiles = iConfig.getUntrackedParameter<std::vector<std::string>>("inputs");
   if (inputfiles.size() % fedIds_.size() != 0) {
     throw cms::Exception("[HGCalSlinkFromRaw::SlinkFromRaw]")
-        << "Number of inputs (" << inputfiles.size() << ") cannot be devided by the number of fedIds ("
+        << "Number of inputs (" << inputfiles.size() << ") cannot be divided by the number of fedIds ("
         << fedIds_.size() << ")";
   }
 
@@ -86,6 +86,7 @@ std::unique_ptr<FEDRawDataCollection> SlinkFromRaw::next() {
 
   // read trigger Slink
   metaData_ = HGCalTestSystemMetaData();
+  rTrgEvent_ = nullptr;
   {
     auto reader = readers_.at(SlinkFileReader::kTrigIdOffset);
 
@@ -97,7 +98,8 @@ std::unique_ptr<FEDRawDataCollection> SlinkFromRaw::next() {
       if (rTrgEvent->slinkBoe()->eventId() == eventId_ && rTrgEvent->slinkEoe()->bxId() == bxId_ &&
           rTrgEvent->slinkEoe()->orbitId() == orbitId_) {
         metaData_.trigType_ = rTrgEvent->slinkBoe()->l1aType();
-        metaData_.trigSubType_ = rTrgEvent->slinkBoe()->l1aSubType();        
+        metaData_.trigSubType_ = rTrgEvent->slinkBoe()->l1aSubType();
+        rTrgEvent_ = rTrgEvent;
         readTriggerData(rTrgEvent);
         break;
       } else {
@@ -117,6 +119,17 @@ std::unique_ptr<FEDRawDataCollection> SlinkFromRaw::next() {
     }
   }
 
+  return raw_data;
+}
+
+std::unique_ptr<FEDRawDataCollection> SlinkFromRaw::nextTriggerData() {
+  auto raw_data = std::make_unique<FEDRawDataCollection>();
+  if (rTrgEvent_ && rTrgEvent_->payloadLength() > 0) {
+    const size_t payload_size = sizeof(uint64_t) / sizeof(char) * (rTrgEvent_->payloadLength() - 1);
+    auto &fed_data = raw_data->FEDData(0);
+    fed_data.resize(payload_size);
+    memcpy(fed_data.data(), (const char *)rTrgEvent_->payload(), payload_size);
+  }
   return raw_data;
 }
 
@@ -154,21 +167,19 @@ void SlinkFromRaw::readTriggerData(const hgcal_slinkfromraw::RecordRunning *rTrg
     p += 4;  // (1 record header + 2 slink header + 1 trigger readout header)
     for (unsigned iblock = 0; iblock < 4 && p < (const uint64_t *)rTrgEvent + rTrgEvent->payloadLength(); ++iblock) {
       LogDebug("SlinkFromRaw") << "Header: " << std::hex << std::setfill('0') << "0x" << *p << std::endl;
-      if((*p >> 8) != pkt_sep) {
-	throw cms::Exception("CorruptData")  << "Expected packet separator: 0x" << std::hex << pkt_sep << " read: 0x" << (*p >> 8) 
-					     << " Event id: 0x" << rTrgEvent->slinkBoe()->eventId()
-					     << " Bx id: 0x" << rTrgEvent->slinkEoe()->bxId()
-					     << " Orbit id: 0x" << rTrgEvent->slinkEoe()->orbitId()
-					     << " BOE header: 0x" << rTrgEvent->slinkBoe()->boeHeader();
+      if ((*p >> 8) != pkt_sep) {
+        throw cms::Exception("CorruptData")
+            << "Expected packet separator: 0x" << std::hex << pkt_sep << " read: 0x" << (*p >> 8) << " Event id: 0x"
+            << rTrgEvent->slinkBoe()->eventId() << " Bx id: 0x" << rTrgEvent->slinkEoe()->bxId() << " Orbit id: 0x"
+            << rTrgEvent->slinkEoe()->orbitId() << " BOE header: 0x" << rTrgEvent->slinkBoe()->boeHeader();
       }
       length = *p & pkt_mask;
-      if (iblock <2) {
+      if (iblock < 2) {
         //copy from *(p+1) to *(p+length) (i.e. discard the fecafecafe... word) ?
         //std::cout << std::dec << iblock << std::endl;
         //for(uint32_t k=1; k<length+1; k++)
         //  std::cout << "\t 0x" << std::hex << *(p+k) << std::endl;
-      }
-      else if (iblock == 2) {
+      } else if (iblock == 2) {
         // scintillator
         // the length should be 9 (BX) * 5 (64b word)
         // only the 1st 64b word is used; the last (5th) word is a separator
