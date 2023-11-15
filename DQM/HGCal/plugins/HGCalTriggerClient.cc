@@ -44,12 +44,14 @@ private:
      @short histogram filler per event
    */
   void analyze(const edm::Event&, const edm::EventSetup&) override;
-
+  
   MonitorElement *h_trigtime, *h_trigtype, *h_ECONTRawDataErrors;
-
+  MonitorElement *h_ECONTRawDataErrorsModule;
+  std::map<MonitorKey_t, int> modbins_;
+  
   // ------------ member function ------------
-  bool is0xFECAFE(const uint32_t word);
-  int find0xFECAFE(const uint64_t* payload, const size_t payload_size, int n);
+  bool isBlockSeparator(const uint32_t word);
+  int findBlockSeparator(const uint64_t* payload, const size_t payload_size, int n);
   void eventDump(const uint64_t* payload, const size_t payload_size, edm::LogSystem& out, int verbose);
   void getRawLocations(uint32_t packet_locations[12], uint32_t* packet);
   uint32_t pick_bits32(uint32_t number, int start_bit, int number_of_bits);
@@ -110,7 +112,7 @@ void HGCalTriggerClient::eventDump(const uint64_t* payload,
 }
 
 //Checks of matches with 0xFECAFE
-bool HGCalTriggerClient::is0xFECAFE(const uint32_t word) {
+bool HGCalTriggerClient::isBlockSeparator(const uint32_t word) {
   if (((word >> 8) & 0xFFFFFF) == 16698110)
     return true;  //0xFECAFE
   else
@@ -118,12 +120,12 @@ bool HGCalTriggerClient::is0xFECAFE(const uint32_t word) {
 }
 
 // returns location of the n'th 0xFECAFE
-int HGCalTriggerClient::find0xFECAFE(const uint64_t* payload, const size_t payload_size, int n) {
+int HGCalTriggerClient::findBlockSeparator(const uint64_t* payload, const size_t payload_size, int n) {
   int cafe_counter = 0;
   int cafe_word_idx = -1;
   for (unsigned i(0); i < payload_size; i++) {
     const uint32_t word = payload[i];
-    if (is0xFECAFE(word)) {  // if word == 0xfeca
+    if (isBlockSeparator(word)) {  // if word == 0xfeca
       cafe_counter++;
       if (cafe_counter == n) {
         cafe_word_idx = i;
@@ -258,7 +260,7 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
     daq_data[i] = payload[2] >> (i * 7) & 0xF;
     daq_nbx[i] = payload[2] >> (i * 7 + 4) & 0x7;
     daq_event_size[i] = (2 * daq_nbx[i] + 1) * daq_data[i];
-    cafe_word_loc[i] = find0xFECAFE(payload, payload_size, i + 1);
+    cafe_word_loc[i] = findBlockSeparator(payload, payload_size, i + 1);
     size_in_cafe[i] = payload[cafe_word_loc[i]] & 0xFF;
   }
 
@@ -269,9 +271,8 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
     out << "first_cafe_word_loc : " << cafe_word_loc[0] << "\n";
   }
 
-  int sixth_cafe_word_loc = find0xFECAFE(payload, payload_size, 6);
+  int sixth_cafe_word_loc = findBlockSeparator(payload, payload_size, 6);
   if (sixth_cafe_word_loc != 0) {
-    //nofExcessFECAFEErrors++ ;
     h_ECONTRawDataErrors->Fill(0);
     return;
   }
@@ -282,11 +283,10 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
           << ", Corrupted header need to skip event as the first 0xfecafe word is at  " << cafe_word_loc[0]
           << " instead of ideal location 3."
           << "\n";
-    //nofFirstFECAFEErrors++ ;
     h_ECONTRawDataErrors->Fill(1);
     return;
   }
-
+  
   for (unsigned i(0); i < 5; i++) {
     if (daq_event_size[i] != size_in_cafe[i]) {
       if (verbose_ >= 2)
@@ -301,7 +301,6 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
     if (verbose_ >= 1)
       out << "Event : " << iEvent.id().event() << ", Bx size do not match between packed " << daq_nbx[0]
           << " and unpacked data " << daq_nbx[1] << std::endl;
-    //nofNbxMisMatches++;
     h_ECONTRawDataErrors->Fill(3);
     return;
   }
@@ -463,10 +462,8 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
                       << "," << (bx_unpkd[iect][ibx][istc] & 0x3) << "," << bx_raw[iect][ibx][istc] << ") "
                       << std::endl;
           if (iect == 0) {
-            //nofBxRawUnpkMM0++;
             isBxE0 = true;
           } else {
-            //nofBxRawUnpkMM1++;
             isBxE1 = true;
           }
         }
@@ -557,23 +554,23 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
   }
 
   if (isSTCNE0)
-    h_ECONTRawDataErrors->Fill(4);
+    h_ECONTRawDataErrorsModule->Fill(0, 0);
   if (isSTCLE0)
-    h_ECONTRawDataErrors->Fill(5);
+    h_ECONTRawDataErrorsModule->Fill(0, 1);
   if (isEngE0)
-    h_ECONTRawDataErrors->Fill(6);
+    h_ECONTRawDataErrorsModule->Fill(0, 2);
   if (isBxE0)
-    h_ECONTRawDataErrors->Fill(7);
+    h_ECONTRawDataErrorsModule->Fill(0, 3);
   //if(isBxCE0) nofEvcBxCE0++;
 
   if (isSTCNE1)
-    h_ECONTRawDataErrors->Fill(8);
+    h_ECONTRawDataErrorsModule->Fill(1, 0);
   if (isSTCLE1)
-    h_ECONTRawDataErrors->Fill(9);
+    h_ECONTRawDataErrorsModule->Fill(1, 1);
   if (isEngE1)
-    h_ECONTRawDataErrors->Fill(10);
+    h_ECONTRawDataErrorsModule->Fill(1, 2);
   if (isBxE1)
-    h_ECONTRawDataErrors->Fill(11);
+    h_ECONTRawDataErrorsModule->Fill(1, 3);
   //if(isBxCE1) nofEvcBxCE1++;
 
   //////////////////// NOTE : The above raw decoding is only valid for STC mode ///////////////////////
@@ -581,6 +578,13 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
 
 void HGCalTriggerClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, edm::EventSetup const& iSetup) {
   //book monitoring elements (histos, profiles, etc.)
+
+  //create module keys
+  auto moduleInfo = iSetup.getData(moduleInfoToken_);
+  module_keys_ = moduleInfo.getAsSimplifiedModuleLocatorMap(true);
+  size_t nmods = module_keys_.size();
+  LogDebug("HGCalTriggerClient") << "Read module info with " << nmods << " entries";
+  
   ibook.setCurrentFolder("HGCAL/Trigger");
   h_trigtime = ibook.book1D("trigtime", ";trigger phase; Counts", 200, 0, 200);
 
@@ -591,37 +595,29 @@ void HGCalTriggerClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run const
   h_trigtype->setBinLabel(3, "random");
   h_trigtype->setBinLabel(4, "soft");
   h_trigtype->setBinLabel(5, "regular");
+  
+  h_ECONTRawDataErrors = ibook.book1D("ECONTRawDataErrors", ";", 4, 0, 4);
+  h_ECONTRawDataErrors->setBinLabel(1, "NofFECAFE>5"); //5 0xfecafe have been used in September'23 beamtest
+  h_ECONTRawDataErrors->setBinLabel(2, "1stFECAFE");   //1st 0xfecafe in wrong position
+  h_ECONTRawDataErrors->setBinLabel(3, "EvtSizeMM");   //Event size mismatch between that mentioned in header vs in the 0xfecafe 8 bit LSB position
+  h_ECONTRawDataErrors->setBinLabel(4, "NbxMM");       //Number of bx's are not maching between unpacker input and output
 
-  h_ECONTRawDataErrors = ibook.book1D("ECONTRawDataErrors", ";", 12, 0, 12);
-  h_ECONTRawDataErrors->setBinLabel(1, "NofFECAFE>5");  //5 0xfecafe have been used in September'23 beamtest
-  h_ECONTRawDataErrors->setBinLabel(2, "1stFECAFE");    //1st 0xfecafe in wrong position
-  h_ECONTRawDataErrors->setBinLabel(
-      3, "EvtSizeMM");  //Event size mismatch between that mentioned in header vs in the 0xfecafe 8 bit LSB position
-  h_ECONTRawDataErrors->setBinLabel(4, "NbxMM");  //Number of bx's are not maching between unpacker input and output
-  h_ECONTRawDataErrors->setBinLabel(
-      5,
-      "STC-index(LSB)");  //The STC index as written in the unpacked data does not match with the location where STC information is written in the rawdata packet (for LSB 32-bit word)
-  h_ECONTRawDataErrors->setBinLabel(
-      6,
-      "STC location(LSB)");  //The location of STC as written in unpacker input does not match with the unpacked data (for LSB 32-bit word)
-  h_ECONTRawDataErrors->setBinLabel(
-      7,
-      "STC Energy(LSB)");  //The energy of STC as written in unpacker input does not match with the unpacked data (for LSB 32-bit word)
-  h_ECONTRawDataErrors->setBinLabel(
-      8,
-      "Bx-index(LSB)");  //The bx index as written in unpacker input does not match with the unpacked data (for LSB 32-bit word)
-  h_ECONTRawDataErrors->setBinLabel(
-      9,
-      "STC-index(MSB)");  //The STC index as written in the unpacked data does not match with the location where STC information is written in the rawdata packet (for MSB 32-bit word)
-  h_ECONTRawDataErrors->setBinLabel(
-      10,
-      "STC location(MSB)");  //The location of STC as written in unpacker input does not match with the unpacked data (for MSB 32-bit word)
-  h_ECONTRawDataErrors->setBinLabel(
-      11,
-      "STC Energy(MSB)");  //The energy of STC as written in unpacker input does not match with the unpacked data (for MSB 32-bit word)
-  h_ECONTRawDataErrors->setBinLabel(
-      12,
-      "Bx-index(MSB)");  //The bx index as written in unpacker input does not match with the unpacked data (for MSB 32-bit word)
+
+  h_ECONTRawDataErrorsModule = ibook.book2D("PerModuleErrors", "; ECON-T", nmods, 0, nmods, 4, 0, 4);
+  h_ECONTRawDataErrorsModule->setBinLabel(1, "STC-index", 2);     //The STC index as written in the unpacked data does not match with the location where STC information is written in the rawdata pack
+  h_ECONTRawDataErrorsModule->setBinLabel(2, "STC location", 2);  //The location of STC as written in unpacker input does not match with the unpacked data 
+  h_ECONTRawDataErrorsModule->setBinLabel(3, "STC Energy", 2);    //The energy of STC as written in unpacker input does not match with the unpacked data 
+  h_ECONTRawDataErrorsModule->setBinLabel(4, "Bx-index", 2);      //The bx index as written in unpacker input does not match with the unpacked data 
+
+  for (auto m : moduleInfo.params_) {
+    TString tag = Form("zside%d_plane%d_u%d_v%d", m.zside, m.plane, m.u, m.v);
+    MonitorKey_t k(m.zside, m.plane, m.u, m.v);
+    modbins_[k] = modbins_.size();
+    TString modlabel(tag);
+    h_ECONTRawDataErrorsModule->setBinLabel(modbins_[k] + 1, modlabel.ReplaceAll("_", ",").Data(), 1);
+  }
+
+
 }
 
 void HGCalTriggerClient::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
