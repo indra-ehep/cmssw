@@ -66,6 +66,8 @@ private:
   std::map<MonitorKey_t, MonitorKey_t> module_keys_;
   std::map<uint32_t, HGCalSiCellChannelInfo> eleidtoSiInfo_;
 
+  enum TriggerType { Phys=0x0001, Calib=0x0002, Random=0x0004, Soft=0x0008, Regular=0x0010};
+
   const bool debug_;
   const int
       verbose_;  //level 5 (all), 4(frequent erros), 3(errors), 2(rare errors), 1(very rare errors/error under study)
@@ -78,7 +80,6 @@ private:
 HGCalTriggerClient::HGCalTriggerClient(const edm::ParameterSet& iConfig)
     : trigRawToken_(consumes<FEDRawDataCollection>(iConfig.getParameter<edm::InputTag>("RawTrigData"))),
       metadataToken_(consumes<HGCalTestSystemMetaData>(iConfig.getParameter<edm::InputTag>("MetaData"))),
-      //recRun_(consumes<hgcal::SlinkFromRaw>(iConfig.getParameter<edm::InputTag>("RecRun"))),
       moduleInfoToken_(
           esConsumes<HGCalCondSerializableModuleInfo, HGCalCondSerializableModuleInfoRcd, edm::Transition::BeginRun>()),
       siModuleInfoToken_(esConsumes<HGCalCondSerializableSiCellChannelInfo,
@@ -113,7 +114,7 @@ void HGCalTriggerClient::eventDump(const uint64_t* payload,
 
 //Checks of matches with 0xFECAFE
 bool HGCalTriggerClient::isBlockSeparator(const uint32_t word) {
-  if (((word >> 8) & 0xFFFFFF) == 16698110)
+  if ((word >> 8) == 0xFECAFE)
     return true;  //0xFECAFE
   else
     return false;
@@ -210,7 +211,7 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
   h_trigtime->Fill(int(trigTime));
 
   uint32_t trigType = metadata.trigType_;
-
+  
   // read ECON-T raw data
   const auto& raw_trig_data = iEvent.get(trigRawToken_);
   const auto& data = raw_trig_data.FEDData(0);
@@ -239,17 +240,25 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
   bool isEngE0 = false;
   bool isEngE1 = false;
 
-  if (trigType == 0x0001)
-    h_trigtype->Fill(0);
-  if (trigType == 0x0002)
-    h_trigtype->Fill(1);
-  if (trigType == 0x0004)
-    h_trigtype->Fill(2);
-  if (trigType == 0x0008)
-    h_trigtype->Fill(3);
-  if (trigType == 0x0010)
-    h_trigtype->Fill(4);
 
+  switch(trigType){
+  case Phys:
+    h_trigtype->Fill(0);
+    break;
+  case Calib:
+    h_trigtype->Fill(1);
+    break;
+  case Random:
+    h_trigtype->Fill(2);
+    break;
+  case Soft:
+    h_trigtype->Fill(3);
+    break;
+  case Regular:
+    h_trigtype->Fill(4);
+    break;
+  }
+  
   uint16_t daq_data[5];        //5 : data blocks separated by 0xfecafe
   uint16_t daq_nbx[5];         //5 : data blocks separated by 0xfecafe
   uint16_t size_in_cafe[5];    //5 : data blocks separated by 0xfecafe
@@ -309,22 +318,13 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
 
   int bx_index = -1.0 * int(daq_nbx[0]);
   const int maxnbx = (2 * daq_nbx[0] + 1);  //In case of raw input
-  uint32_t energy_raw[2][maxnbx][12];       //2 : LSB/MSB, 12 : STC
-  uint32_t loc_raw[2][maxnbx][12];          //2 : LSB/MSB, 12 : STC
-  uint32_t bx_raw[2][maxnbx][12];           //2 : LSB/MSB, 15 : STC
-  uint32_t packet[4];                       //a bx packet constitutes 4 64 bit words
-  uint32_t packet_locations[12];
-  uint64_t packet_energies[12];
+  uint32_t energy_raw[2][maxnbx][12] = {};       //2 : LSB/MSB, 12 : STC
+  uint32_t loc_raw[2][maxnbx][12] = {};          //2 : LSB/MSB, 12 : STC
+  uint32_t bx_raw[2][maxnbx][12] = {};           //2 : LSB/MSB, 15 : STC
+  uint32_t packet[4] = {0};                       //a bx packet constitutes 4 64 bit words
+  uint32_t packet_locations[12] = {0};
+  uint64_t packet_energies[12] = {0};
 
-  for (int iect = 0; iect < 2; iect++) {
-    for (int ibx = 0; ibx < maxnbx; ibx++) {
-      for (int istc = 0; istc < 12; istc++) {
-        energy_raw[iect][ibx][istc] = 0;
-        loc_raw[iect][ibx][istc] = 0;
-        bx_raw[iect][ibx][istc] = 0;
-      }
-    }
-  }
 
   //Decode unpacker input rawdata
   for (unsigned i(cafe_word_loc[0] + 1); i < daq_event_size[0] + unsigned(cafe_word_loc[0]) + 1; i = i + 4) {
@@ -379,16 +379,9 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
     bx_index++;
   }
 
-  uint32_t energy_unpkd[2][maxnbx][12];
-  uint32_t loc_unpkd[2][maxnbx][12];  //2 : LSB/MSB, 12 : STC
-  uint32_t bx_unpkd[2][maxnbx][12];   //2 : LSB/MSB, 15 : STC
-  for (int iect = 0; iect < 2; iect++)
-    for (int ibx = 0; ibx < maxnbx; ibx++)
-      for (int istc = 0; istc < 12; istc++) {
-        energy_unpkd[iect][ibx][istc] = 0;
-        loc_unpkd[iect][ibx][istc] = 0;
-        bx_unpkd[iect][ibx][istc] = 0;
-      }
+  uint32_t energy_unpkd[2][maxnbx][12] = {};
+  uint32_t loc_unpkd[2][maxnbx][12] = {};  //2 : LSB/MSB, 12 : STC
+  uint32_t bx_unpkd[2][maxnbx][12] = {};   //2 : LSB/MSB, 15 : STC
 
   int index_stc = 0;
   int index_ibx = 0;
@@ -450,10 +443,11 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
       index_ibx++;
   }
 
-  //check bx
+
   for (int iect = 0; iect < 2; iect++) {
     for (int ibx = 0; ibx < maxnbx; ibx++) {
       for (int istc = 0; istc < 12; istc++) {
+	//compare STC bx
         if (bx_unpkd[iect][ibx][istc] != bx_raw[iect][ibx][istc]) {
           if (verbose_ >= 4)
             std::cerr << " Unpacked location value do not match with the packed one for (Run, event, iecont, bx, stc, "
@@ -467,41 +461,8 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
             isBxE1 = true;
           }
         }
-      }
-    }
-    // The following test can not be performed untill we can access HGCalSlinkFromRaw
-    // //modulo test
-    // if(ev.bxId==3564){
-    //   if(bx_raw[iect][daq_nbx[0]][0]!=15 || bx_unpkd[iect][daq_nbx[1]][0]!=15){
-    // 	//std::cerr << "Bx Module test failed for iect : "<< iect <<" since ev.bxId%8 : " << ev.bxId <<" and bx_raw : "<< bx_raw[iect][daq_nbx[0]][0] << " and bx_unpkd : "<< bx_unpkd[iect][daq_nbx[1]][0] << std::endl ;
-    // 	isGood = false;
-    // 	if(iect==0){
-    // 	  nofBxCentralMM++;
-    // 	  isBxCE = true;
-    // 	}else{
-    // 	  nofBxCentralMM1++;
-    // 	  isBxCE1 = true;
-    // 	}
-    //   }
-    // }else{
-    //   if((ev.bxId%8 != bx_raw[iect][daq_nbx[0]][0]) || (ev.bxId%8 != bx_unpkd[iect][daq_nbx[1]][0])){
-    // 	//std::cerr << "Bx Module test failed for iect : "<< iect <<" since ev.bxId%8 : " << (ev.bxId%8) <<" and bx_raw : "<< bx_raw[iect][daq_nbx[0]][0] << " and bx_unpkd : "<< bx_unpkd[iect][daq_nbx[1]][0] << std::endl ;
-    // 	isGood = false;
-    // 	if(iect==0) {
-    // 	  nofBxCentralMM++;
-    // 	  isBxCE = true;
-    // 	}else{
-    // 	  nofBxCentralMM1++;
-    // 	  isBxCE1 = true;
-    // 	}
-    //   }
-    // }
-  }
-
-  //Check Locations
-  for (int iect = 0; iect < 2; iect++) {
-    for (int ibx = 0; ibx < maxnbx; ibx++) {
-      for (int istc = 0; istc < 12; istc++) {
+	
+	//compare STC index
         if ((loc_unpkd[iect][ibx][istc] >> 2 & 0xF) != unsigned(istc)) {
           if (verbose_ >= 4)
             std::cerr << " Unpacked location index do not match with the STC for (Run, event, iecont, bx, stc, "
@@ -514,6 +475,8 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
             isSTCNE1 = true;
           }
         }
+
+	//compare STC location
         if ((loc_unpkd[iect][ibx][istc] & 0x3) != loc_raw[iect][ibx][istc]) {
           if (verbose_ >= 4)
             std::cerr << " Unpacked location value do not match with the packed one for (Run, event, iecont, bx, stc, "
@@ -527,15 +490,9 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
             isSTCLE1 = true;
           }
         }
-      }
-    }
-  }
-
-  //Check Energy
-  for (int iect = 0; iect < 2; iect++) {
-    for (int ibx = 0; ibx < maxnbx; ibx++) {
-      for (int istc = 0; istc < 12; istc++) {
-        if (energy_raw[iect][ibx][istc] != energy_unpkd[iect][ibx][istc]) {
+	
+	//compare STC energy
+	if (energy_raw[iect][ibx][istc] != energy_unpkd[iect][ibx][istc]) {
           if (verbose_ >= 4)
             std::cerr << " Packed and unpacked energies does not match for (Run, "
                          "event,iecont,bx.stc,raw_energy,unpacked_energy) : "
@@ -549,9 +506,11 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
             isEngE1 = true;
           }
         }
+
       }
     }
   }
+  
 
   if (isSTCNE0)
     h_ECONTRawDataErrorsModule->Fill(0, 0);
@@ -561,7 +520,6 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
     h_ECONTRawDataErrorsModule->Fill(0, 2);
   if (isBxE0)
     h_ECONTRawDataErrorsModule->Fill(0, 3);
-  //if(isBxCE0) nofEvcBxCE0++;
 
   if (isSTCNE1)
     h_ECONTRawDataErrorsModule->Fill(1, 0);
@@ -571,7 +529,6 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
     h_ECONTRawDataErrorsModule->Fill(1, 2);
   if (isBxE1)
     h_ECONTRawDataErrorsModule->Fill(1, 3);
-  //if(isBxCE1) nofEvcBxCE1++;
 
   //////////////////// NOTE : The above raw decoding is only valid for STC mode ///////////////////////
 }
@@ -624,7 +581,6 @@ void HGCalTriggerClient::fillDescriptions(edm::ConfigurationDescriptions& descri
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("RawTrigData", edm::InputTag("hgcalEmulatedSlinkRawData", "hgcalTriggerRawData"));
   desc.add<edm::InputTag>("MetaData", edm::InputTag("hgcalEmulatedSlinkRawData", "hgcalMetaData"));
-  //desc.add<edm::InputTag>("RecRun", edm::InputTag("hgcalEmulatedSlinkRawData", "hgcalRecRun"));
   desc.addUntracked<bool>("debug", true);
   desc.addUntracked<unsigned>("runNumber", 0);
   desc.addUntracked<int>("verbose", 1);
