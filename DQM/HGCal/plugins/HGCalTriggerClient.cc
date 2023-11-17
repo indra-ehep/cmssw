@@ -66,7 +66,7 @@ private:
   std::map<MonitorKey_t, MonitorKey_t> module_keys_;
   std::map<uint32_t, HGCalSiCellChannelInfo> eleidtoSiInfo_;
 
-  enum TriggerType { Phys=0x0001, Calib=0x0002, Random=0x0004, Soft=0x0008, Regular=0x0010};
+  enum class TriggerType { Phys=0x0001, Calib=0x0002, Random=0x0004, Soft=0x0008, Regular=0x0010, CoinPhysCal=0x0003};
 
   const bool debug_;
   const int
@@ -210,7 +210,7 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
   uint32_t trigTime = metadata.trigTime_;
   h_trigtime->Fill(int(trigTime));
 
-  uint32_t trigType = metadata.trigType_;
+  TriggerType trigType = TriggerType(metadata.trigType_);
   
   // read ECON-T raw data
   const auto& raw_trig_data = iEvent.get(trigRawToken_);
@@ -242,21 +242,27 @@ void HGCalTriggerClient::analyze(const edm::Event& iEvent, const edm::EventSetup
 
 
   switch(trigType){
-  case Phys:
+  case TriggerType::Phys:
     h_trigtype->Fill(0);
     break;
-  case Calib:
+  case TriggerType::Calib:
     h_trigtype->Fill(1);
     break;
-  case Random:
+  case TriggerType::Random:
     h_trigtype->Fill(2);
     break;
-  case Soft:
+  case TriggerType::Soft:
     h_trigtype->Fill(3);
     break;
-  case Regular:
+  case TriggerType::Regular:
     h_trigtype->Fill(4);
     break;
+  case TriggerType::CoinPhysCal:
+    h_trigtype->Fill(5);
+    break;
+  default:
+    h_trigtype->Fill(6);
+    break;    
   }
   
   uint16_t daq_data[5];        //5 : data blocks separated by 0xfecafe
@@ -546,12 +552,14 @@ void HGCalTriggerClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run const
   h_trigtime = ibook.book1D("trigtime", ";trigger phase; Counts", 200, 0, 200);
 
   //ibook.setCurrentFolder("HGCAL/Trigger");
-  h_trigtype = ibook.book1D("trigtype", ";L1a trigger types", 5, 0, 5);
+  h_trigtype = ibook.book1D("trigtype", ";L1a trigger types", 7, 0, 7);
   h_trigtype->setBinLabel(1, "Phys");
   h_trigtype->setBinLabel(2, "Calib");
   h_trigtype->setBinLabel(3, "random");
   h_trigtype->setBinLabel(4, "soft");
   h_trigtype->setBinLabel(5, "regular");
+  h_trigtype->setBinLabel(6, "CoinPhysCal");
+  h_trigtype->setBinLabel(7, "Unknown");
   
   h_ECONTRawDataErrors = ibook.book1D("ECONTRawDataErrors", ";", 4, 0, 4);
   h_ECONTRawDataErrors->setBinLabel(1, "NofFECAFE>5"); //5 0xfecafe have been used in September'23 beamtest
