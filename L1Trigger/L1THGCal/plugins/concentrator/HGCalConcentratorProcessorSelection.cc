@@ -40,6 +40,12 @@ HGCalConcentratorProcessorSelection::HGCalConcentratorProcessorSelection(const e
         autoEncoderImpl_ = std::make_unique<HGCalConcentratorAutoEncoderImpl>(conf);
     } else if (selectionType[subdet] == "noSelection") {
       selectionType_[subdet] = noSelection;
+    } else if (selectionType[subdet] == "ECONTEmul") {
+      selectionType_[subdet] = econtEmul;
+      if (!econtemulImpl_)
+        econtemulImpl_ = std::make_unique<HGCalECONTEmulImpl>(conf);
+      if (!trigSumImpl_)
+        trigSumImpl_ = std::make_unique<HGCalConcentratorTrigSumImpl>(conf);
     } else {
       throw cms::Exception("HGCTriggerParameterError")
           << "Unknown type of concentrator selection '" << selectionType[subdet] << "'";
@@ -68,6 +74,8 @@ void HGCalConcentratorProcessorSelection::run(const edm::Handle<l1t::HGCalTrigge
     coarsenerImpl_->setGeometry(geometry());
   if (trigSumImpl_)
     trigSumImpl_->setGeometry(geometry());
+  if (econtemulImpl_)
+    econtemulImpl_->setGeometry(geometry());
   triggerTools_.setGeometry(geometry());
 
   auto& triggerCellCollOutput = std::get<0>(triggerCollOutput);
@@ -127,6 +135,9 @@ void HGCalConcentratorProcessorSelection::run(const edm::Handle<l1t::HGCalTrigge
         case noSelection:
           trigCellVecOutput = trigCellVecCoarsened;
           break;
+        // case econtEmul:
+        //   econtemulImpl_->select(trigCellVecCoarsened, trigCellVecOutput, trigCellVecNotSelected);
+        //   break;
         default:
           // Should not happen, selection type checked in constructor
           break;
@@ -155,6 +166,9 @@ void HGCalConcentratorProcessorSelection::run(const edm::Handle<l1t::HGCalTrigge
           break;
         case noSelection:
           trigCellVecOutput = module_trigcell.second;
+          break;
+        case econtEmul:
+          econtemulImpl_->select(module_trigcell.second, trigCellVecOutput, trigCellVecNotSelected);
           break;
         default:
           // Should not happen, selection type checked in constructor

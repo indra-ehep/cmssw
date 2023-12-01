@@ -22,14 +22,13 @@ process.load('Configuration.StandardSequences.DigiToRaw_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
-
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(50)
 )
 
 # Input source
 process.source = cms.Source("PoolSource",
-       fileNames = cms.untracked.vstring('/store/relval/CMSSW_13_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/125X_mcRun4_realistic_v5_2026D88noPU-v1/2590000/02fb5828-a118-49d3-8fcb-142debe91c20.root'),
+       fileNames = cms.untracked.vstring('file:/vols/cms/idas//store/relval/CMSSW_13_0_0_pre2/23293.0_CloseByParticleGun+2026D88_NoNoise/step2.root'),
        inputCommands=cms.untracked.vstring(
            'keep *',
            )

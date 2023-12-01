@@ -36,6 +36,16 @@ threshold_conc_proc = cms.PSet(ProcessorName  = cms.string('HGCalConcentratorPro
                                ctcSize = cms.vuint32(CTC_SIZE),
                                )
 
+econtemul_conc_proc = cms.PSet(ProcessorName  = cms.string('HGCalConcentratorProcessorSelection'),
+                               Method = cms.vstring(['ECONTEmul']*3),
+                               threshold_silicon = cms.double(2.), # MipT
+                               threshold_scintillator = cms.double(2.), # MipT
+                               coarsenTriggerCells = cms.vuint32(0,0,0),
+                               fixedDataSizePerHGCROC = cms.bool(False),
+                               allTrigCellsInTrigSums = cms.bool(True),
+                               ctcSize = cms.vuint32(CTC_SIZE),
+                               )
+
 # Column is Nlinks, Row is NWafers
 # Requested size = 8(links)x8(wafers)
 # Values taken from https://indico.cern.ch/event/747610/contributions/3155360/, slide 13
@@ -235,7 +245,7 @@ from Configuration.Eras.Modifier_phase2_hgcalV10_cff import phase2_hgcalV10
 # we rescale the thresholds of the FE selection
 # (see https://indico.cern.ch/event/806845/contributions/3359859/attachments/1815187/2966402/19-03-20_EGPerf_HGCBE.pdf
 # for more details)
-phase2_hgcalV10.toModify(threshold_conc_proc,
+phase2_hgcalV10.toModify(econtemul_conc_proc,
                         threshold_silicon=1.35,  # MipT
                         threshold_scintillator=1.35,  # MipT
                         )
@@ -245,7 +255,7 @@ l1tHGCalConcentratorProducer = cms.EDProducer(
     "HGCalConcentratorProducer",
     InputTriggerCells = cms.InputTag('l1tHGCalVFEProducer:HGCalVFEProcessorSums'),
     InputTriggerSums = cms.InputTag('l1tHGCalVFEProducer:HGCalVFEProcessorSums'),
-    ProcessorParameters = threshold_conc_proc.clone()
+    ProcessorParameters = econtemul_conc_proc.clone()
     )
 
 
