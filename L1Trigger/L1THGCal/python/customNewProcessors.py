@@ -27,3 +27,13 @@ def custom_clustering_standalone(process):
 def custom_tower_standalone(process):
     process.l1tHGCalTowerProducer.ProcessorParameters.ProcessorName = cms.string('HGCalTowerProcessorSA')
     return process
+
+def custom_conc_standalone(process):
+    process.l1tHGCalConcentratorProducer.ProcessorParameters.ProcessorName = cms.string('HGCalConcentratorProcessorSelectionSA')
+    process.l1tHGCalTowerMapProducer.InputTriggerSums = cms.InputTag('l1tHGCalConcentratorProducer:HGCalConcentratorProcessorSelectionSA')
+    process.l1tHGCalTowerMapProducerHFNose.InputTriggerSums = cms.InputTag('l1tHGCalConcentratorProducer:HGCalConcentratorProcessorSelectionSA')
+    process.l1tHGCalBackEndLayer1Producer.InputTriggerCells = cms.InputTag('l1tHGCalConcentratorProducer:HGCalConcentratorProcessorSelectionSA')
+    process.l1tHGCalBackEndStage1Producer.InputTriggerCells = cms.InputTag('l1tHGCalConcentratorProducer:HGCalConcentratorProcessorSelectionSA')
+    process.l1tHGCalBackEndLayer1ProducerHFNose.InputTriggerCells = cms.InputTag('l1tHGCalConcentratorProducer:HGCalConcentratorProcessorSelectionSA')
+    return process
+
