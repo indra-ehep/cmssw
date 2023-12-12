@@ -61,7 +61,8 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_T21', ''
 process.load('L1Trigger.L1THGCal.hgcalTriggerPrimitives_cff')
 
 # Use new processors and standalone algorithms
-from L1Trigger.L1THGCal.customNewProcessors import custom_conc_standalone, custom_clustering_standalone, custom_tower_standalone
+from L1Trigger.L1THGCal.customNewProcessors import custom_vfe_standalone, custom_conc_standalone, custom_clustering_standalone, custom_tower_standalone
+process = custom_vfe_standalone(process)
 process = custom_conc_standalone(process)
 process = custom_clustering_standalone(process)
 process = custom_tower_standalone(process)

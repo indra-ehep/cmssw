@@ -24,6 +24,7 @@ void HGCalECONTEmulImpl::select(const std::vector<l1t::HGCalTriggerCell>& trigCe
   constexpr int kHighDensityThickness = 0;
   //int nofTrigCells = 0;
   for (const auto& trigCell : trigCellVecInput) {
+    GlobalPoint tcpos = triggerTools_.getTCPosition(trigCell.detId());
     bool isScintillator = triggerTools_.isScintillator(trigCell.detId());
     int thickness = triggerTools_.thicknessIndex(trigCell.detId());
     bool moduleDensity = (thickness!=kHighDensityThickness) ? true : false;
@@ -33,7 +34,8 @@ void HGCalECONTEmulImpl::select(const std::vector<l1t::HGCalTriggerCell>& trigCe
     l1t::HGCalTriggerCell outTrigCell(trigCell);
     outTrigCell.setCompressedCharge(uint32_t(data.outputCode()));
     trigCellVecOutput.push_back(outTrigCell);
-    std::cout<<"SA:HGCalECONTEmulImpl::select: Input : "<<trigCell.compressedCharge() << ", output : " << uint16_t(data.outputCode()) << std::endl;
+    if(tcpos.z()>0.0)
+      std::cout<<"SA:HGCalECONTEmulImpl::select: DelId : "<<trigCell.detId() <<" ,  Input : "<<trigCell.compressedCharge() << ", output : " << uint16_t(data.outputCode()) << std::endl;
     // double threshold = (isScintillator ? threshold_scintillator_ : threshold_silicon_);
     // if (trigCell.mipPt() >= threshold) {
     //   trigCellVecOutput.push_back(outTrigCell);

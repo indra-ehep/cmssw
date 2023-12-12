@@ -1,6 +1,7 @@
 #include "L1Trigger/L1THGCal/interface/HGCalVFECompressionImpl.h"
 
 #include "FWCore/Utilities/interface/Exception.h"
+#include <iostream>
 
 HGCalVFECompressionImpl::HGCalVFECompressionImpl(const edm::ParameterSet& conf)
     : exponentBits_(conf.getParameter<uint32_t>("exponentBits")),
@@ -35,12 +36,15 @@ void HGCalVFECompressionImpl::compressSingle(const uint64_t value,
   if (bitlen <= mantissaBits_) {
     compressedCode = shifted_value;
     compressedValue = shifted_value << truncationBits_;
+    //std::cout<<"HGCalVFECompressionImpl::compressSingle value : "<<value<<", truncationBits_ : "<<truncationBits_<<", mantissaBits_ : "<<mantissaBits_<<", compressedCode : "<<compressedCode<<", compressedValue : "<<compressedValue<<std::endl;
     return;
   }
 
   // build exponent and mantissa
   const uint32_t exponent = bitlen - mantissaBits_;
   const uint64_t mantissa = (shifted_value >> (exponent - 1)) & ~(1ULL << mantissaBits_);
+
+  //std::cout<<"HGCalVFECompressionImpl::compressSingle value : "<<value<<", truncationBits_ : "<<truncationBits_<<", mantissaBits_ : "<<mantissaBits_<<", exponent : "<<exponent<<", mantissa : "<<mantissa<<", saturationCode_ : "<<saturationCode_<<", rounding_ "<<rounding_ <<std::endl;
 
   // assemble floating-point
   const uint32_t floatval = (exponent << mantissaBits_) | mantissa;
