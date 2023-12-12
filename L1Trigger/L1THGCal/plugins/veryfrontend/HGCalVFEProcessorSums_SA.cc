@@ -54,7 +54,7 @@ void HGCalVFEProcessorSumsSA::run(const HGCalDigiCollection& digiColl,
     unsigned layerId = triggerTools_.layerWithOffset(digiData.id());
     int zside = triggerTools_.zside(digiData.id());
     if(zside>0.)
-      std::cout<<"HGCalVFEProcessorSums::run:digiloop "; //digiData.size() : " << digiData.size() ;
+      std::cout<<"HGCalVFEProcessorSumsSA::run:digiloop "; //digiData.size() : " << digiData.size() ;
     dataframes.emplace_back(digiData.id());
     for (int i = 0; i < digiData.size(); i++) {
       dataframes.back().setSample(i, digiData.sample(i));
@@ -82,7 +82,7 @@ void HGCalVFEProcessorSumsSA::run(const HGCalDigiCollection& digiColl,
 	unsigned layerId = triggerTools_.layerWithOffset(frame.id());
 	int zside = triggerTools_.zside(frame.id());
 	if(zside>0.)
-	  std::cout<<"HGCalVFEProcessorSums::run:linearized layerId : "<<layerId<<", DetID : "<<uint32_t(frame.id())<<", data : "<<frame[2].data() <<", mode : "<<frame[2].mode()<<", amplitude_int : "<< linframe.second <<std::endl;
+	  std::cout<<"HGCalVFEProcessorSumsSA::run:linearized layerId : "<<layerId<<", DetID : "<<uint32_t(frame.id())<<", data : "<<frame[2].data() <<", mode : "<<frame[2].mode()<<", amplitude_int : "<< linframe.second <<std::endl;
       }
     }
   }
@@ -96,7 +96,7 @@ void HGCalVFEProcessorSumsSA::run(const HGCalDigiCollection& digiColl,
 	unsigned layerId = triggerTools_.layerWithOffset(linframe.first);
 	int zside = triggerTools_.zside(linframe.first);
 	if(zside>0.)
-	  std::cout<<"HGCalVFEProcessorSums::run:cellsum layerId : "<<layerId<<", DetID : "<<uint32_t(linframe.first)<<", tc_id : "<<tc.first<<", amplitude_int : "<< linframe.second <<", summed amplitude : " << tc.second <<std::endl;
+	  std::cout<<"HGCalVFEProcessorSumsSA::run:cellsum layerId : "<<layerId<<", DetID : "<<uint32_t(linframe.first)<<", tc_id : "<<tc.first<<", amplitude_int : "<< linframe.second <<", summed amplitude : " << tc.second <<std::endl;
       }
     }
   }
@@ -114,7 +114,7 @@ void HGCalVFEProcessorSumsSA::run(const HGCalDigiCollection& digiColl,
 	unsigned layerId = triggerTools_.layerWithOffset(tc.first);
 	int zside = triggerTools_.zside(tc.first);
 	if(zside>0.)
-	  std::cout<<"HGCalVFEProcessorSums::run:compres layerId : "<<layerId<<", tc_id : "<<tc.first<<", thickness : "<<thickness<<", summed amplitude : " << tc.second <<", comp_f : " << tc_comp.second[0]<<", comp_s : " << tc_comp.second[1] <<std::endl;
+	  std::cout<<"HGCalVFEProcessorSumsSA::run:compres layerId : "<<layerId<<", tc_id : "<<tc.first<<", thickness : "<<thickness<<", summed amplitude : " << tc.second <<", comp_f : " << tc_comp.second[0]<<", comp_s : " << tc_comp.second[1] <<std::endl;
       }
     }
   }
