@@ -24,13 +24,14 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(50)
+    input = cms.untracked.int32(-1)
 )
 
 # Input source
 process.source = cms.Source("PoolSource",
                             #fileNames = cms.untracked.vstring('/store/relval/CMSSW_13_0_0_pre2/RelValTTbar_14TeV/GEN-SIM-DIGI-RAW/125X_mcRun4_realistic_v5_2026D88noPU-v1/2590000/02fb5828-a118-49d3-8fcb-142debe91c20.root'),
                             fileNames = cms.untracked.vstring('file:/vols/cms/idas/store/relval/CMSSW_13_0_0_pre2/Single-Muon-2026D88_NoNoise_noise_MIP/step2.root'),
+                            #fileNames = cms.untracked.vstring('file:/vols/cms/idas/store/relval/CMSSW_13_0_0_pre2/Single-Muon-2026D88_NoNoise_noise_MIP_n10000/step2.root'),
                             inputCommands=cms.untracked.vstring(
                                 'keep *',
                             )
@@ -63,9 +64,9 @@ process.load('L1Trigger.L1THGCal.hgcalTriggerPrimitives_cff')
 # Use new processors and standalone algorithms
 from L1Trigger.L1THGCal.customNewProcessors import custom_vfe_standalone, custom_conc_standalone, custom_clustering_standalone, custom_tower_standalone
 process = custom_vfe_standalone(process)
-process = custom_conc_standalone(process)
-process = custom_clustering_standalone(process)
-process = custom_tower_standalone(process)
+#process = custom_conc_standalone(process)
+#process = custom_clustering_standalone(process)
+#process = custom_tower_standalone(process)
 
 process.hgcl1tpg_step = cms.Path(process.L1THGCalTriggerPrimitives)
 
@@ -76,9 +77,9 @@ process = custom_geometry_V11_Imp3(process)
 # load ntuplizer
 process.load('L1Trigger.L1THGCalUtilities.hgcalTriggerNtuples_cff')
 from L1Trigger.L1THGCalUtilities.customNtuples import custom_ntuples_standalone_conc, custom_ntuples_standalone_clustering, custom_ntuples_standalone_tower
-process = custom_ntuples_standalone_conc(process)
-process = custom_ntuples_standalone_clustering(process)
-process = custom_ntuples_standalone_tower(process)
+#process = custom_ntuples_standalone_conc(process)
+#process = custom_ntuples_standalone_clustering(process)
+#process = custom_ntuples_standalone_tower(process)
 process.ntuple_step = cms.Path(process.L1THGCalTriggerNtuples)
 
 # Schedule definition

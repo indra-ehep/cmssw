@@ -80,14 +80,14 @@ void HGCalConcentratorProcessorSelection::run(const edm::Handle<l1t::HGCalTrigge
   for (const auto& trigCell : collInput) {
     uint32_t module = geometry()->getModuleFromTriggerCell(trigCell.detId());
     tc_modules[module].push_back(trigCell);
-    GlobalPoint tcpos = triggerTools_.getTCPosition(trigCell.detId());
-    unsigned layerId = triggerTools_.layerWithOffset(trigCell.detId());
-    if(tcpos.z()>0.0)
-      std::cout<< " Layer : " << std::setw(2) << std::setfill('0') << layerId 
-	       <<" , zside : "<<tcpos.z()
-	       <<" , trigcell.detId() : "<<trigCell.detId()
-	       <<" , Module :" << module 
-	       << std::endl;
+    //GlobalPoint tcpos = triggerTools_.getTCPosition(trigCell.detId());
+    //unsigned layerId = triggerTools_.layerWithOffset(trigCell.detId());
+    // if(tcpos.z()>0.0)
+    //   std::cout<< " Layer : " << std::setw(2) << std::setfill('0') << layerId 
+    // 	       <<" , zside : "<<tcpos.z()
+    // 	       <<" , trigcell.detId() : "<<trigCell.detId()
+    // 	       <<" , Module :" << module 
+    // 	       << std::endl;
   }
 
   for (const auto& module_trigcell : tc_modules) {

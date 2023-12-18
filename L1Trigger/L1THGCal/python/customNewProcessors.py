@@ -41,6 +41,9 @@ def custom_vfe_standalone(process):
     process.l1tHGCalVFEProducer.ProcessorParameters.ProcessorName = cms.string('HGCalVFEProcessorSumsSA')
     process.l1tHGCalConcentratorProducer.InputTriggerCells = cms.InputTag('l1tHGCalVFEProducer:HGCalVFEProcessorSumsSA')
     process.l1tHGCalConcentratorProducer.InputTriggerSums = cms.InputTag('l1tHGCalVFEProducer:HGCalVFEProcessorSumsSA')
+    # process.l1tHGCalVFEProducer.ProcessorParameters.summationCfg.noiseSilicon.values =  cms.vdouble(0,0,0)
+    # process.l1tHGCalVFEProducer.ProcessorParameters.summationCfg.noiseScintillator.noise_MIP = cms.double(0)
+    # process.l1tHGCalVFEProducer.ProcessorParameters.summationCfg.noiseThreshold = cms.double(0)
     return process
     
 
