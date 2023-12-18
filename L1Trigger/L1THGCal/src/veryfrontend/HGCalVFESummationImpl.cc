@@ -12,24 +12,11 @@ HGCalVFESummationImpl::HGCalVFESummationImpl(const edm::ParameterSet& conf)
   }
   threshold_scintillator_ = conf.getParameter<edm::ParameterSet>("noiseScintillator").getParameter<double>("noise_MIP");
   const auto threshold = conf.getParameter<double>("noiseThreshold");
-
-  // cout<<"HGCalVFESummationImpl::HGCalVFESummationImpl lsb_silicon_fC : " << lsb_silicon_fC_ << endl;
-  // cout<<"HGCalVFESummationImpl::HGCalVFESummationImpl lsb_scintillator_MIP : " << lsb_scintillator_MIP_ << endl;
-  // for(unsigned ithickness=0;ithickness<nThickness;ithickness++)
-  //   cout<<"HGCalVFESummationImpl::HGCalVFESummationImpl thresholds_silicon["<< ithickness <<"] : " << thresholds_silicon_[ithickness] << endl;
-  // cout<<"HGCalVFESummationImpl::HGCalVFESummationImpl threshold_scintillator : " << threshold_scintillator_ << endl;
-  // cout<<"HGCalVFESummationImpl::HGCalVFESummationImpl threshold : " << threshold << endl;
-
   std::transform(
-		 thresholds_silicon_.begin(), thresholds_silicon_.end(), thresholds_silicon_.begin(), [threshold](auto noise) {
-		   return noise * threshold;
-		 });
+      thresholds_silicon_.begin(), thresholds_silicon_.end(), thresholds_silicon_.begin(), [threshold](auto noise) {
+        return noise * threshold;
+      });
   threshold_scintillator_ *= threshold;
-  
-  // for(unsigned ithickness=0;ithickness<nThickness;ithickness++)
-  //   cout<<"HGCalVFESummationImpl::HGCalVFESummationImpl thresholds_silicon_["<< ithickness <<"] : " << thresholds_silicon_[ithickness] << endl;
-  // cout<<"HGCalVFESummationImpl::HGCalVFESummationImpl threshold_scintillator_ : " << threshold_scintillator_ << endl;
-
 }
 
 void HGCalVFESummationImpl::triggerCellSums(const std::vector<std::pair<DetId, uint32_t>>& input_dataframes,
