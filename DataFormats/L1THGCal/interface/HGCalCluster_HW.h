@@ -33,8 +33,8 @@ namespace l1thgcfirmware {
   typedef std::array<ClusterWord, nWordsPerCluster> ClusterWords;
   
   namespace Scales {
-    constexpr float ET_LSB = 1./1024;
-    constexpr float ET_HGCALtoL1_SCALE = 1. / 256;
+    constexpr float ET_LSB = 1./ 256; //1024;
+    constexpr float ET_HGCALtoL1_SCALE = 1. / 64; //256;
     constexpr float ET_L1_LSB = 0.25;
 
     constexpr int INTPHI_PI = 720;
