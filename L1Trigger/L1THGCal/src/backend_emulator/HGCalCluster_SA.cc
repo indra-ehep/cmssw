@@ -2,10 +2,6 @@
 #include <algorithm>
 #include <cmath>
 
-// Many useful functions for handling and manipulation of bitsets
-// From L1 Track Finder DTC
-// But could perhaps still just use ap_uint?
-#include "DataFormats/L1TrackTrigger/interface/TTBV.h"
 
 using namespace l1thgcfirmware;
 

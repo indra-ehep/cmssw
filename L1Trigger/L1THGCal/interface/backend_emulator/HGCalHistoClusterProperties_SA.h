@@ -24,8 +24,9 @@ namespace l1thgcfirmware {
                     const l1thgcfirmware::CentroidHelperPtrCollection& readoutFlags,
                     l1thgcfirmware::HGCalClusterSAPtrCollection& clusterAccumulation,
                     l1thgcfirmware::HGCalClusterSAPtrCollection& clusterSums) const;
-    void clusterProperties(l1thgcfirmware::HGCalClusterSAPtrCollection& clusterSums) const;
-
+  public:
+    void calcProperties(l1thgcfirmware::HGCalClusterSAPtrCollection& clusterSums) const;
+  private:
     // Helper functions
     unsigned int sigma_coordinate(unsigned int Sum_W,
                                                            unsigned long int Sum_Wc2,

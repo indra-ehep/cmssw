@@ -15,7 +15,7 @@ void HGCalHistoClusterProperties::runClusterProperties(
   // Cluster properties
   HGCalClusterSAPtrCollection clusterAccumulation;
   clusterSum(protoClustersIn, readoutFlags, clusterAccumulation, clustersOut);
-  clusterProperties(clustersOut);
+  calcProperties(clustersOut);
 }
 
 // Accumulates/combines inputs cluster objects (each corresponding to one TC belonging to a cluster) into clusters  (one per cluster made up of TCs)
@@ -68,7 +68,7 @@ void HGCalHistoClusterProperties::clusterSum(const HGCalClusterSAPtrCollection& 
 }
 
 // Calculates properties of clusters from accumulated quantities
-void HGCalHistoClusterProperties::clusterProperties(HGCalClusterSAPtrCollection& clusterSums) const {
+void HGCalHistoClusterProperties::calcProperties(HGCalClusterSAPtrCollection& clusterSums) const {
 
   for (auto& c : clusterSums) {
 
