@@ -102,7 +102,7 @@ void HGCalHistoClusterProperties::calcProperties(HGCalClusterSAPtrCollection& cl
     // Quality flags are placeholders at the moment
     hwCluster.setQualityFlags(Scales::HGCaltoL1_et(c->e_em_core()), Scales::HGCaltoL1_et(c->e_h_early()), c->sat_tc(), c->shapeq(), saturatedPhi, nominalPhi);
 
-    const double sigma_E_scale = 0.008982944302260876;
+    const double sigma_E_scale = 0.008982944302260876 * 4;  // Et scale changed, multiplying existing sigma E scale by 4 to compensate
     hwCluster.sigma_E = sigma_coordinate(c->n_tc_w(), c->w2(), c->w(), sigma_E_scale);
 
     const double sigma_z_scale = 0.08225179463624954;
