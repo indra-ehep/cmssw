@@ -26,7 +26,7 @@ namespace l1thgcfirmware {
   typedef ap_uint<7> sigma_phi_t;
   typedef ap_uint<5> sigma_eta_t;
   typedef ap_uint<7> sigma_roz_t;
-
+  
   static constexpr int wordLength = 64;
   static constexpr int nWordsPerCluster = 4;
   typedef uint64_t ClusterWord;
@@ -34,14 +34,14 @@ namespace l1thgcfirmware {
   
   namespace Scales {
     constexpr float ET_LSB = 1./ 256; //1024;
-    constexpr float ET_HGCALtoL1_SCALE = 1. / 64; //256;
+    constexpr float ET_HGCALtoL1_SCALE = 1./256 ;// 64; //256;
     constexpr float ET_L1_LSB = 0.25;
-
+    
     constexpr int INTPHI_PI = 720;
     constexpr float ETAPHI_LSB = M_PI / INTPHI_PI;
     constexpr float Z_LSB = 0.05;
     constexpr float SIGMA_ROZ_ROZ_LSB = 0.0001920625; // 0.024584/2^(7), max r/z / nBits
-
+    
     inline float floatEt(e_t et) { return et.to_float() * ET_L1_LSB; }
     inline float floatEta(eta_t eta) { return eta.to_float() * ETAPHI_LSB; }
     inline float floatPhi(phi_t phi) { return phi.to_float() * ETAPHI_LSB + M_PI/2; }
@@ -82,6 +82,7 @@ namespace l1thgcfirmware {
     }
 
     inline eFraction_t makeL1EFraction(float num, float denom) {
+      if(denom==0) return 0;
       float frac = num/denom;
       frac = round( ( round(frac * (1 << 12)) / ( 1 << 12 ) ) * 256 );  // Firmware accurate calculation
       if ( frac >= 256. ) frac = 255.; 
@@ -91,7 +92,7 @@ namespace l1thgcfirmware {
 
   }
 
-
+  
   struct HGCalCluster_HW {
 
     // First word
@@ -121,7 +122,7 @@ namespace l1thgcfirmware {
     nLayer_t coreShowerLength;
     sigma_eta_t sigma_eta;
     sigma_roz_t sigma_roz;
-
+    
     inline bool operator==(const HGCalCluster_HW &other) const {
       return e == other.e &&
               e_em == other.e_em &&
@@ -232,12 +233,12 @@ namespace l1thgcfirmware {
       packed[3] = 0;
       return packed;
     }
-
+    
     inline static void unpack_firstWord(const ap_uint<BITWIDTH_FIRSTWORD> &src, HGCalCluster_HW& cluster) {
       cluster.initFromBits_firstWord(src);
       return;
     }
-
+    
     inline void initFromBits_firstWord(const ap_uint<BITWIDTH_FIRSTWORD> &src ) {
       unsigned int start = 0;
       unpack_from_bits(src, start, e);
@@ -309,10 +310,49 @@ namespace l1thgcfirmware {
       bool qualFracEarlyCE_H = e_h_early != 0x3FFFFF && e != 0x3FFFFF;
       qualFlags = (ap_uint<1>(nominalPhi), ap_uint<1>(saturatedPhi), ap_uint<1>(shapeQuality), ap_uint<1>(qualFracEarlyCE_H), ap_uint<1>(qualFracCoreCE_E), ap_uint<1>(qualFracCE_E), ap_uint<1>(saturatedTC) );
     }
+    
+    inline void print() {
+
+      uint64_t first_word = pack_firstWord();
+      uint64_t second_word = pack_secondWord();
+      uint64_t third_word = pack_thirdWord();
+      std::cout.fill('0');
+      std::cout << "HGCalCluster_HW::print "
+		<< std::endl << std::hex
+		<<"FirstWord:: E_T[14,0-13] : "<< e
+		<< ", E_T_EM[14,14-27] : " << e_em
+		<< ", gctBits[4,28-31] : " << gctBits
+		<< ", fractionInCE_E[8,32-39] : "<< fractionInCE_E
+		<< ", fractionInCoreCE_E[8,40-47] : "<< fractionInCoreCE_E
+		<< ", fractionInEarlyCE_E[8,48-55] : "<< fractionInEarlyCE_E
+		<< ", firstLayer[6,56-61] : "<< firstLayer
+		<< std::endl
+		<< "SecondWord:: w_eta[10,0-9] : " << w_eta
+		<< ", w_phi[9,10-18] : " << w_phi
+		<< ", w_z[12,19-30] : " << w_z
+		<< ", nTC[10,32-41] : " << nTC
+		<< ", qualFlags[7,42-48] : " << qualFlags
+		<< std::endl
+		<< "ThirdWord:: sigma_E[7,0-6] : " << sigma_E
+		<< ", lastLayer[6,7-12] : " << lastLayer
+		<< ", showerLength[6,13-18] : " << showerLength
+		<< ", sigma_z[7,32-38] : " << sigma_z
+		<< ", sigma_phi[7,39-45] : " << sigma_phi
+		<< ", coreShowerLength[6,46-51] : " << coreShowerLength
+		<< ", sigma_eta[5,52-56] : " << sigma_eta
+		<< ", sigma_roz[7,57-63] : " << sigma_roz
+		<< std::endl
+		<< "First word : 0x" << std::hex << std::setw(16) << first_word << std::dec << std::endl
+		<< "Second word : 0x" << std::hex << std::setw(16) << second_word << std::dec << std::endl
+		<< "Third word : 0x" << std::hex << std::setw(16) << third_word << std::dec << std::endl;
+      std::cout.fill(' ');
+    }
   };
 
   inline void clear(HGCalCluster_HW &c) { c.clear(); }
 
+
 }  // namespace l1thgcfirmware
 
 #endif
+
