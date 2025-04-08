@@ -26,7 +26,7 @@ namespace l1thgcfirmware {
   typedef ap_uint<7> sigma_phi_t;
   typedef ap_uint<5> sigma_eta_t;
   typedef ap_uint<7> sigma_roz_t;
-  
+
   static constexpr int wordLength = 64;
   static constexpr int nWordsPerCluster = 4;
   typedef uint64_t ClusterWord;
@@ -36,12 +36,12 @@ namespace l1thgcfirmware {
     constexpr float ET_LSB = 1./ 256; //1024;
     constexpr float ET_HGCALtoL1_SCALE = 1./256 ;// 64; //256;
     constexpr float ET_L1_LSB = 0.25;
-    
+
     constexpr int INTPHI_PI = 720;
     constexpr float ETAPHI_LSB = M_PI / INTPHI_PI;
     constexpr float Z_LSB = 0.05;
     constexpr float SIGMA_ROZ_ROZ_LSB = 0.0001920625; // 0.024584/2^(7), max r/z / nBits
-    
+
     inline float floatEt(e_t et) { return et.to_float() * ET_L1_LSB; }
     inline float floatEta(eta_t eta) { return eta.to_float() * ETAPHI_LSB; }
     inline float floatPhi(phi_t phi) { return phi.to_float() * ETAPHI_LSB + M_PI/2; }
@@ -92,7 +92,7 @@ namespace l1thgcfirmware {
 
   }
 
-  
+
   struct HGCalCluster_HW {
 
     // First word
@@ -122,7 +122,7 @@ namespace l1thgcfirmware {
     nLayer_t coreShowerLength;
     sigma_eta_t sigma_eta;
     sigma_roz_t sigma_roz;
-    
+
     inline bool operator==(const HGCalCluster_HW &other) const {
       return e == other.e &&
               e_em == other.e_em &&
@@ -233,12 +233,12 @@ namespace l1thgcfirmware {
       packed[3] = 0;
       return packed;
     }
-    
+
     inline static void unpack_firstWord(const ap_uint<BITWIDTH_FIRSTWORD> &src, HGCalCluster_HW& cluster) {
       cluster.initFromBits_firstWord(src);
       return;
     }
-    
+
     inline void initFromBits_firstWord(const ap_uint<BITWIDTH_FIRSTWORD> &src ) {
       unsigned int start = 0;
       unpack_from_bits(src, start, e);
@@ -310,7 +310,7 @@ namespace l1thgcfirmware {
       bool qualFracEarlyCE_H = e_h_early != 0x3FFFFF && e != 0x3FFFFF;
       qualFlags = (ap_uint<1>(nominalPhi), ap_uint<1>(saturatedPhi), ap_uint<1>(shapeQuality), ap_uint<1>(qualFracEarlyCE_H), ap_uint<1>(qualFracCoreCE_E), ap_uint<1>(qualFracCE_E), ap_uint<1>(saturatedTC) );
     }
-    
+
     inline void print() {
 
       uint64_t first_word = pack_firstWord();
@@ -351,8 +351,6 @@ namespace l1thgcfirmware {
 
   inline void clear(HGCalCluster_HW &c) { c.clear(); }
 
-
 }  // namespace l1thgcfirmware
 
 #endif
-
