@@ -296,6 +296,10 @@ namespace l1thgcfirmware {
         return cluster;
     }
 
+
+
+
+
     inline void setGCTBits() {
       ap_uint<1> gctBit0 = fractionInCE_E > 128;
       ap_uint<1> gctBit1 = fractionInCoreCE_E > 128;
