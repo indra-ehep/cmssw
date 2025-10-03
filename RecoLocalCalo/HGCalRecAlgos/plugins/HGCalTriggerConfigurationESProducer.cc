@@ -26,8 +26,8 @@ class HGCalTriggerConfigurationESProducer : public edm::ESProducer, public edm::
 public:
   explicit HGCalTriggerConfigurationESProducer(const edm::ParameterSet& iConfig)
       :  //edm::ESProducer(iConfig),
-        fedjson_(iConfig.getParameter<std::string>("fedjson")),
-        modjson_(iConfig.getParameter<std::string>("modjson")) {
+        fedjson_(iConfig.getParameter<edm::FileInPath>("fedjson")),
+        modjson_(iConfig.getParameter<edm::FileInPath>("modjson")) {
     auto cc = setWhatProduced(this);
     indexToken_ = cc.consumes(iConfig.getParameter<edm::ESInputTag>("indexSource"));
   }
@@ -36,8 +36,8 @@ public:
     edm::ParameterSetDescription desc;
     desc.add<edm::ESInputTag>("indexSource", edm::ESInputTag(""))
         ->setComment("Label for module indexer to set SoA size");
-    desc.add<std::string>("fedjson", "")->setComment("JSON file with FED configuration parameters");
-    desc.add<std::string>("modjson", "")->setComment("JSON file with ECOND configuration parameters");
+    desc.add<edm::FileInPath>("fedjson")->setComment("JSON file with FED configuration parameters");
+    desc.add<edm::FileInPath>("modjson")->setComment("JSON file with ECONT configuration parameters");
     descriptions.addWithDefaultLabel(desc);
   }
 
@@ -57,10 +57,10 @@ public:
         << "produce: fedjson_=" << fedjson_ << ",\n         modjson_=" << modjson_;
 
     // retrieve values from custom JSON format (see HGCalCalibrationESProducer)
-    edm::FileInPath fedfip(fedjson_);  // e.g. HGCalCommissioning/LocalCalibration/data/config_feds.json
-    edm::FileInPath modfip(modjson_);  // e.g. HGCalCommissioning/LocalCalibration/data/config_econds.json
-    std::ifstream fedfile(fedjson_);
-    std::ifstream modfile(modjson_);
+    std::string fedjsonurl(fedjson_.fullPath());
+    std::string modjsonurl(modjson_.fullPath());
+    std::ifstream fedfile(fedjsonurl);
+    std::ifstream modfile(modjsonurl);
     const json fed_config_data = json::parse(fedfile, nullptr, true, /*ignore_comments*/ true);
     const json mod_config_data = json::parse(modfile, nullptr, true, /*ignore_comments*/ true);
 
@@ -72,7 +72,7 @@ public:
     const std::vector<std::string> modkeys = {"density", "dropLSB", "select", "stc_type", "eporttx_numen","calv","mux"};
     if (nfeds != fed_config_data.size())
       edm::LogWarning("HGCalTriggerConfigurationESProducer")
-          << "Total number of FEDs found in JSON file " << fedjson_ << " (" << fed_config_data.size()
+          << "Total number of FEDs found in JSON file " << fedjsonurl << " (" << fed_config_data.size()
           << ") does not match indexer (" << nfeds << ")";
 
     // loop over FEDs in indexer & fill configuration structs: FED > ECON-D > eRx
@@ -82,9 +82,9 @@ public:
     config_->feds.resize(moduleMap.maxFEDSize());
     for (std::size_t fedid = 0; fedid < moduleMap.maxFEDSize(); fedid++) {
       // sanity checks
-      const auto fedkey = hgcal::search_fedkey(fedid, fed_config_data, fedjson_);  // search matching key
+      const auto fedkey = hgcal::search_fedkey(fedid, fed_config_data, fedjsonurl);  // search matching key
       hgcal::check_keys(
-          fed_config_data, fedkey, fedkeys, fedjson_);  // check required keys are in the JSON, warn otherwise
+          fed_config_data, fedkey, fedkeys, fedjsonurl);  // check required keys are in the JSON, warn otherwise
 
       if (moduleMap.fedReadoutSequences()[fedid].readoutTypes_.empty())            // check if FED exists (non-empty)
         continue;                                                                  // skip non-existent FED
@@ -114,15 +114,15 @@ public:
         HGCalTDAQConfig tdaqConfig;
         tdaqConfig.tdaqBlockHeaderMarker=std::stoi(std::string(fed_config_data[fedkey]["tdaqHeaderMarker"]), nullptr, 16);
         tdaqConfig.tdaqFlag=fed_config_data[fedkey]["tdaqFlag"][itdaq];
-        uint32_t nECONT = uint32_t(fed_config_data[fedkey]["neconts"]);
+        uint32_t nECONT = uint32_t(fed_config_data[fedkey]["neconts"][itdaq]);
 
         for (const auto& [typecode, ids] : moduleMap.typecodeMap()) {
           auto [fedid_, imod] = ids;
           if (fedid_ != fedid && totalECONTs<=imod && imod<totalECONTs+nECONT)
             continue;
-          const auto modkey = hgcal::search_modkey(typecode, mod_config_data, modjson_);  // search matching key
+          const auto modkey = hgcal::search_modkey(typecode, mod_config_data, modjsonurl);  // search matching key
           hgcal::check_keys(
-              mod_config_data, modkey, modkeys, modjson_);  // check required keys are in the JSON, warn otherwise
+              mod_config_data, modkey, modkeys, modjsonurl);  // check required keys are in the JSON, warn otherwise
           //sanity check
           size_t nTC_calv = mod_config_data[modkey]["calv"].size();
           size_t nTC_mux = mod_config_data[modkey]["tcMux"].size();
@@ -154,7 +154,7 @@ public:
       }
       config_->feds[fedid] = fedConfig;
     }
-    std::cout<<config_<<std::endl;
+    std::cout<<*config_<<std::endl;
     LogDebug("HGCalTriggerConfigurationESProducer") << *config_;
     return config_;
   }  // end of produce()
@@ -170,8 +170,8 @@ private:
   }
 
   edm::ESGetToken<HGCalMappingModuleIndexer, HGCalElectronicsMappingRcd> indexToken_;
-  const std::string fedjson_;       // JSON file
-  const std::string modjson_;       // JSON file
+  const edm::FileInPath fedjson_;   // JSON file
+  const edm::FileInPath modjson_;   // JSON file
 };
 
 DEFINE_FWK_EVENTSETUP_SOURCE(HGCalTriggerConfigurationESProducer);
