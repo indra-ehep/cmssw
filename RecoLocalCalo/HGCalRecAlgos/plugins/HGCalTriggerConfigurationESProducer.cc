@@ -43,7 +43,8 @@ public:
 
   // @short get hexadecimal value, and override if value_override>=0
   static int32_t gethex(const std::string& value, const int32_t value_override) {
-    return (value_override >= 0 ? value_override : std::stoi(value, nullptr, 16));
+    int32_t ret = (value_override >= 0 ? value_override : std::stoi(value, nullptr, 16));
+    return ret;
   }
 
   // @short get integer value, and override if value_override>=0
@@ -103,7 +104,7 @@ public:
       if (moduleMap.getNumModules(fedid) != fed_config_data[fedkey]["econtSwapOffset"].size()
         || moduleMap.getNumModules(fedid) != totalECONTs)             // check if length of sawp offsets, number of ECONTs in FED read from module locator, and number of econts summed mathces
         continue;
-      std::cout << fedid << " has " << nTDAQ << " nTDAQ and " << totalECONTs << "ECONTs" << std::endl; 
+      std::cout << fedid << " has " << nTDAQ << " nTDAQ and " << totalECONTs << " ECONTs" << std::endl; 
       // fill FED configurations
       HGCalTriggerFedConfig fedConfig;
       
@@ -117,7 +118,7 @@ public:
       totalECONTs = 0;
       for (std::size_t itdaq=0;itdaq<nTDAQ;itdaq++){
         HGCalTDAQConfig tdaqConfig;
-        tdaqConfig.tdaqBlockHeaderMarker=std::stoi(std::string(fed_config_data[fedkey]["tdaqHeaderMarker"]), nullptr, 16);
+        tdaqConfig.tdaqBlockHeaderMarker=std::stoul(std::string(fed_config_data[fedkey]["tdaqHeaderMarker"]), nullptr, 16);
         tdaqConfig.tdaqFlag=fed_config_data[fedkey]["tdaqFlag"][itdaq];
         uint32_t nECONT = uint32_t(fed_config_data[fedkey]["neconts"][itdaq]);
 
