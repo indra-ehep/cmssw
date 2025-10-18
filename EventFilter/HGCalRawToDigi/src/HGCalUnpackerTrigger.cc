@@ -21,7 +21,9 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
   const auto* start_fed_data = &(fed_data.data().front());
   const auto* const header = reinterpret_cast<const uint64_t*>(start_fed_data);
   const auto* const trailer = reinterpret_cast<const uint64_t*>(start_fed_data + fed_data.size());
+  
   LogDebug("[HGCalUnpackerTrigger]") << " nwords (64b) = " << std::distance(header, trailer) << "\n";
+
   
   const uint64_t* ptr = header;
   char num[10], word64[20], word32m[20], word32l[20];
