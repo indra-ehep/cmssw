@@ -9,14 +9,6 @@
 
 namespace hgcaldigi {
   
-  //// Matrix for Energy and address values with an assumptions of maximum 7 bxs and 23 TCs
-  //// A maximum of 23 TCs is posible for 7 elinks
-  // using TCEn = Eigen ::Matrix<uint32_t, 7, 1>;
-  // using TCAd = Eigen ::Matrix<uint8_t, 7, 1>;
-  //// The modulesum values are stored as
-  // using ModSum = Eigen ::Matrix<uint32_t, 7, 1>;
-  // using bxIdx = Eigen ::Matrix<uint8_t, 7, 1>;
-  
   // // Generate structure of arrays (SoA) layout with Digi dataformat
   // GENERATE_SOA_LAYOUT(HGCalDigiTriggerSoALayout,
   //                     SOA_COLUMN(uint8_t, algo),
@@ -45,13 +37,12 @@ namespace hgcaldigi {
 		      SOA_COLUMN(bool, valid),          //valid bit
                       SOA_COLUMN(uint8_t, nBxs),        //nof Bxs        //"TODO: REMOVE THIS (When Configuration is ready)" [Read nBxs from run111138_board160_configuration.yaml CommonReadout-->RxChannels-->ReadoutWindow]
                       SOA_COLUMN(uint8_t, nTCs),        //nof TCs per Bx //"TODO: REMOVE THIS (When Configuration is ready)" [Interpret from nof elinks]
-		      SOA_COLUMN(uint8_t, iBx),     //ith Bx //We need this for DQM 
-		      SOA_COLUMN(uint8_t, bxId),    //Bx index as read fom ECONT
-		      SOA_COLUMN(uint32_t, TotE),   //Module sum for BC and total enegy for STC
-		      // SOA_EIGEN_COLUMN(TCEn, TCEnergy), //TC energies
-		      // SOA_EIGEN_COLUMN(TCAd, TCAddress) //TC addresses
-		      SOA_COLUMN(uint32_t, TCEnergy), //TC energies
-		      SOA_COLUMN(uint8_t, TCAddress) //TC addresses
+		      SOA_COLUMN(uint8_t, iBx),         //ith Bx   //We need this for DQM
+		      SOA_COLUMN(uint32_t, econTId),    //econTId  //"TODO: REMOVE THIS (When Configuration is ready)" 
+		      SOA_COLUMN(uint8_t, bxId),        //Bx index as read fom ECONT
+		      SOA_COLUMN(uint32_t, TotE),          //Module sum for BC and total enegy for STC
+		      SOA_COLUMN(uint32_t, TCEnergy),      //TC energies
+		      SOA_COLUMN(uint8_t, TCAddress)      //TC addresses
 		      )
   
   using HGCalDigiTriggerSoA = HGCalDigiTriggerSoALayout<>;
