@@ -41,6 +41,12 @@ public:
     descriptions.addWithDefaultLabel(desc);
   }
 
+  // @short get hexadecimal value, and override if value_override>=0
+  static int32_t gethex(const std::string& value, const int32_t value_override) {
+    int32_t ret = (value_override >= 0 ? value_override : std::stoi(value, nullptr, 16));
+    return ret;
+  }
+
   // @short get integer value, and override if value_override>=0
   static int32_t getint(const int32_t value, const int32_t value_override) {
     return (value_override >= 0 ? value_override : value);
@@ -86,15 +92,16 @@ public:
       uint32_t nTDAQ = uint32_t(fed_config_data[fedkey]["tdaqFlag"].size());
       uint32_t size_econt_list = uint32_t(fed_config_data[fedkey]["neconts"].size());
       assert(nTDAQ==size_econt_list);
-
+ 
       //count econs and address swaps and compare to baseline expectations from mapping
       uint32_t totalECONTs=0;
-      for (std::size_t itdaq=0;itdaq<nTDAQ;itdaq++)
-       totalECONTs += uint32_t(fed_config_data[fedkey]["neconts"][itdaq]);
-      uint32_t totalECONTs_expected = moduleMap.getNumModules(fedid);
-      uint32_t nSwapOffsets = fed_config_data[fedkey]["econtSwapOffset"].size();
-      assert(totalECONTs_expected == totalECONTs && totalECONTs_expected==nSwapOffsets);
-
+      for (std::size_t itdaq=0;itdaq<nTDAQ;itdaq++){
+	   totalECONTs+=uint32_t(fed_config_data[fedkey]["neconts"][itdaq]);
+      }
+      if (moduleMap.getNumModules(fedid) != fed_config_data[fedkey]["econtSwapOffset"].size()
+        || moduleMap.getNumModules(fedid) != totalECONTs)             // check if length of sawp offsets, number of ECONTs in FED read from module locator, and number of econts summed mathces
+        continue;
+      std::cout << fedid << " has " << nTDAQ << " nTDAQ and " << totalECONTs << " ECONTs" << std::endl; 
       // fill FED configurations
       HGCalTriggerFedConfig fedConfig;
       
@@ -102,6 +109,7 @@ public:
       fedConfig.econtSwapOffset.resize(moduleMap.getNumModules(fedid));
       for (std::size_t iecont=0;iecont<moduleMap.getNumModules(fedid); iecont++){
         fedConfig.econtSwapOffset[iecont] = int(fed_config_data[fedkey]["econtSwapOffset"][iecont]);
+
       }
       // fill TDAQ configurations
       fedConfig.tdaqs.resize(nTDAQ);
@@ -111,27 +119,31 @@ public:
 	tdaqConfig.tdaqBlockHeaderMarker= std::stoul(std::string(fed_config_data[fedkey]["tdaqHeaderMarker"]), nullptr, 16);
         tdaqConfig.tdaqFlag = fed_config_data[fedkey]["tdaqFlag"][itdaq];
         uint32_t nECONT = uint32_t(fed_config_data[fedkey]["neconts"][itdaq]);
-
+	tdaqConfig.econts.resize(nECONT);
         for (const auto& [typecode, ids] : moduleMap.typecodeMap()) {
-          auto [fedid_, imod] = ids;
-          if (fedid_ != fedid && totalECONTs<=imod && imod<totalECONTs+nECONT)
+
+	  auto [fedid_, imod] = ids;
+          if ( (fedid_ != fedid) || !(totalECONTs<=imod && imod<totalECONTs+nECONT)){
             continue;
+          }
           const auto modkey = hgcal::search_modkey(typecode, mod_config_data, modjsonurl);  // search matching key
           hgcal::check_keys(
               mod_config_data, modkey, modkeys, modjsonurl);  // check required keys are in the JSON, warn otherwise
           //sanity check
           size_t nTC_calv = mod_config_data[modkey]["calv"].size();
           size_t nTC_mux = mod_config_data[modkey]["mux"].size();
-          size_t nTC = moduleMap.getNumChannels(typecode);
+          //size_t nTC = moduleMap.getNumChannels(typecode);
+	  size_t nTC = mod_config_data[modkey]["mux"].size();
           if(nTC != nTC_mux || nTC != nTC_calv){
             continue;
           }
           HGCalECONTConfig econtConfig;
+
           econtConfig.density = uint8_t(mod_config_data[modkey]["density"]);
           econtConfig.dropLSB = uint8_t(mod_config_data[modkey]["dropLSB"]);
           econtConfig.select = uint8_t(mod_config_data[modkey]["select"]);
-          econtConfig.stcType = uint8_t(mod_config_data[modkey]["stcType"]);
-          econtConfig.eportTxNumen = uint8_t(mod_config_data[modkey]["eportTxNumen"]);
+          econtConfig.stcType = uint8_t(mod_config_data[modkey]["stc_type"]);
+          econtConfig.eportTxNumen = uint8_t(mod_config_data[modkey]["eporttx_numen"]);
 
           econtConfig.calv.resize(nTC);
           econtConfig.tcMux.resize(nTC);
@@ -143,11 +155,16 @@ public:
           }
           // Caculate module number in the TDAQ
           uint32_t iecont = imod - totalECONTs;
-          tdaqConfig.econts[iecont] = econtConfig;
+	  tdaqConfig.econts.resize(nECONT); //resize so length is the number of econTs
+ 
+	  tdaqConfig.econts[iecont] = econtConfig;
         }
+        
         fedConfig.tdaqs[itdaq]=tdaqConfig;
+
         totalECONTs += uint32_t(fed_config_data[fedkey]["neconts"][itdaq]);
       }
+
       config_->feds[fedid] = fedConfig;
     }
 
