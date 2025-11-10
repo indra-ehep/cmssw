@@ -24,7 +24,6 @@ struct HGCalECONTConfig {
 // @short configuration for TDAQ block
 struct HGCalTDAQConfig {
   uint32_t tdaqBlockHeaderMarker;  // begin of event marker/identifier for
-  uint8_t tdaqFlag; // 0 for skipping, 1 for normal with econts, 2 for trigger time
   // nBX should be dynamically read from the TDAQ header
   std::vector<HGCalECONTConfig> econts; // if size==0, then this TDAQ block is skipped
   COND_SERIALIZABLE;
@@ -55,7 +54,7 @@ inline std::ostream& operator<<(std::ostream& os, const HGCalTriggerConfiguratio
   os << "HGCalConfiguration( nfed=" << std::dec << nfed << std::endl;
   for (std::size_t ifed = 0; ifed < nfed; ifed++) { 
     HGCalTriggerFedConfig fedConfig = config.feds[ifed];
-    os << "fed[" << ifed << "] with " <<std::dec << fedConfig.tdaqs.size() << " TDAQ blocks" << std::endl
+    os << "fed[" << std::dec << ifed << "] with " <<std::dec << fedConfig.tdaqs.size() << " TDAQ blocks" << std::endl
        << "SwapOffset=[";
     for (std::size_t iecont = 0; iecont < fedConfig.econtSwapOffset.size(); iecont++){
       os << fedConfig.econtSwapOffset[iecont] <<", ";
@@ -63,9 +62,8 @@ inline std::ostream& operator<<(std::ostream& os, const HGCalTriggerConfiguratio
     os << "]," << std::endl;
     for (std::size_t itdaq = 0; itdaq < fedConfig.tdaqs.size(); itdaq++) {
       HGCalTDAQConfig tdaqConfig = fedConfig.tdaqs[itdaq];
-      os << "fed[" << ifed << "].tdaq[" << itdaq 
-         << "], headerMarker = 0x" << std::hex << std::setfill('0') << std::setw(8) << tdaqConfig.tdaqBlockHeaderMarker
-         << ", flag = " << std::dec << (int) tdaqConfig.tdaqFlag << std::endl;
+      os << "fed[" << std::dec << ifed << "].tdaq[" << itdaq 
+         << "], headerMarker = 0x" << std::hex << std::setfill('0') << std::setw(8) << tdaqConfig.tdaqBlockHeaderMarker << std::endl;
       if (tdaqConfig.econts.size()==0) {
         os << "with no active ECON-Ts, skipped" << std::endl;
         continue;
@@ -73,7 +71,7 @@ inline std::ostream& operator<<(std::ostream& os, const HGCalTriggerConfiguratio
       os << " with " << std::dec << tdaqConfig.econts.size() << " active ECON-Ts" << std::endl;
       for(unsigned int iecont=0; iecont<tdaqConfig.econts.size(); iecont++){
         HGCalECONTConfig econtConfig = tdaqConfig.econts[iecont];
-        os << "fed[" << ifed << "].tdaq[" << itdaq << "].econt[" << iecont << "], density = " << std::dec << (int)econtConfig.density
+        os << "fed[" << std::dec << ifed << "].tdaq[" << itdaq << "].econt[" << iecont << "], density = " << std::dec << (int)econtConfig.density
            << ", dropLSB = " << std::dec << (int)econtConfig.dropLSB
            << ", select = " << std::dec << (int)econtConfig.select
            << ", stcType = " << std::dec << (int)econtConfig.stcType
@@ -92,6 +90,7 @@ inline std::ostream& operator<<(std::ostream& os, const HGCalTriggerConfiguratio
         for(unsigned int i=0; i<econtConfig.offset.size(); i++){
           os << std::dec << (int)econtConfig.offset[i]<<", ";
         }
+        os << std::endl;
       }
     }
   }
