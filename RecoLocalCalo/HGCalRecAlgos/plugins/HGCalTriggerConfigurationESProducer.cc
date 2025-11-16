@@ -67,8 +67,9 @@ public:
 
     // consistency check
     uint32_t nfeds = moduleMap.numFEDs();
-    const std::vector<std::string> fedkeys = {"tdaqHeaderMarker", "tdaqFlag", "neconts", "econtSwapOffset"};
-    const std::vector<std::string> modkeys = {"density", "dropLSB", "select", "stc_type", "eporttx_numen","calv","mux"};
+    const std::vector<std::string> fedkeys = {"tdaqHeaderMarker", "neconts", "econtSwapOffset"};
+    const std::vector<std::string> modkeys = {
+        "density", "dropLSB", "select", "stc_type", "eporttx_numen", "calv", "mux"};
     if (nfeds != fed_config_data.size())
       edm::LogWarning("HGCalTriggerConfigurationESProducer")
           << "Total number of FEDs found in JSON file " << fedjsonurl << " (" << fed_config_data.size()
@@ -79,82 +80,89 @@ public:
     // HGCalTriggerConfiguration = container class holding FED structs of ECON-D structs of eRx structs
     std::unique_ptr<HGCalTriggerConfiguration> config_ = std::make_unique<HGCalTriggerConfiguration>();
     config_->feds.resize(moduleMap.maxFEDSize());
-    for(const auto& tfed : moduleMap.fedReadoutSequences()) {
-
-      if( tfed.readoutTypes_.size()==0 ) continue;
+    for (const auto& tfed : moduleMap.fedReadoutSequences()) {
+      if (tfed.readoutTypes_.size() == 0)
+        continue;
       auto fedid = tfed.id;
-      
+
       // sanity checks
       const auto fedkey = hgcal::search_fedkey(fedid, fed_config_data, fedjsonurl);  // search matching key
-      hgcal::check_keys(fed_config_data, fedkey, fedkeys, fedjsonurl);               // check required keys are in the JSON, warn otherwise
+      hgcal::check_keys(
+          fed_config_data, fedkey, fedkeys, fedjsonurl);  // check required keys are in the JSON, warn otherwise
 
       // count trigger blocks and compare to size of ECONTs list
-      uint32_t nTDAQ = uint32_t(fed_config_data[fedkey]["tdaqFlag"].size());
-      uint32_t size_econt_list = uint32_t(fed_config_data[fedkey]["neconts"].size());
-      assert(nTDAQ==size_econt_list);
+      uint32_t nTDAQ = uint32_t(fed_config_data[fedkey]["neconts"].size());
 
       //count econs and address swaps and compare to baseline expectations from mapping
-      uint32_t totalECONTs=0;
-      for (std::size_t itdaq=0;itdaq<nTDAQ;itdaq++){
-        totalECONTs+=uint32_t(fed_config_data[fedkey]["neconts"][itdaq]);
+      uint32_t totalECONTs = 0;
+      for (std::size_t itdaq = 0; itdaq < nTDAQ; itdaq++) {
+        totalECONTs += uint32_t(fed_config_data[fedkey]["neconts"][itdaq]);
       }
-      if (moduleMap.getNumModules(fedid) != fed_config_data[fedkey]["econtSwapOffset"].size()
-        || moduleMap.getNumModules(fedid) != totalECONTs)             // check if length of sawp offsets, number of ECONTs in FED read from module locator, and number of econts summed mathces
+      if (moduleMap.getNumModules(fedid) != fed_config_data[fedkey]["econtSwapOffset"].size() ||
+          moduleMap.getNumModules(fedid) !=
+              totalECONTs)  // check if length of sawp offsets, number of ECONTs in FED read from module locator, and number of econts summed mathces
         continue;
-      std::cout << fedid << " has " << nTDAQ << " nTDAQ and " << totalECONTs << " ECONTs" << std::endl; 
+      std::cout << fedid << " has " << nTDAQ << " nTDAQ and " << totalECONTs << " ECONTs" << std::endl;
       // fill FED configurations
       HGCalTriggerFedConfig fedConfig;
-      
+
       // fill econtSwapOffset
       fedConfig.econtSwapOffset.resize(moduleMap.getNumModules(fedid));
-      for (std::size_t iecont=0;iecont<moduleMap.getNumModules(fedid); iecont++){
+      for (std::size_t iecont = 0; iecont < moduleMap.getNumModules(fedid); iecont++) {
         fedConfig.econtSwapOffset[iecont] = int(fed_config_data[fedkey]["econtSwapOffset"][iecont]);
       }
       // fill TDAQ configurations
       fedConfig.tdaqs.resize(nTDAQ);
       totalECONTs = 0;
-      for (std::size_t itdaq=0;itdaq<nTDAQ;itdaq++){
+      for (std::size_t itdaq = 0; itdaq < nTDAQ; itdaq++) {
         HGCalTDAQConfig tdaqConfig;
-	tdaqConfig.tdaqBlockHeaderMarker= std::stoul(std::string(fed_config_data[fedkey]["tdaqHeaderMarker"]), nullptr, 16);
-        tdaqConfig.tdaqFlag = fed_config_data[fedkey]["tdaqFlag"][itdaq];
+        tdaqConfig.tdaqBlockHeaderMarker =
+            std::stoul(std::string(fed_config_data[fedkey]["tdaqHeaderMarker"]), nullptr, 16);
         uint32_t nECONT = uint32_t(fed_config_data[fedkey]["neconts"][itdaq]);
-
+        tdaqConfig.econts.resize(nECONT);
         for (const auto& [typecode, ids] : moduleMap.typecodeMap()) {
           auto [fedid_, imod] = ids;
-          if (fedid_ != fedid && totalECONTs<=imod && imod<totalECONTs+nECONT)
+          if ((fedid_ != fedid) || !(totalECONTs <= imod && imod < totalECONTs + nECONT)) {
             continue;
+          }
           const auto modkey = hgcal::search_modkey(typecode, mod_config_data, modjsonurl);  // search matching key
           hgcal::check_keys(
               mod_config_data, modkey, modkeys, modjsonurl);  // check required keys are in the JSON, warn otherwise
           //sanity check
           size_t nTC_calv = mod_config_data[modkey]["calv"].size();
-          size_t nTC_mux = mod_config_data[modkey]["tcMux"].size();
-          size_t nTC = moduleMap.getNumChannels(typecode);
-          if(nTC != nTC_mux || nTC != nTC_calv){
+          size_t nTC_mux = mod_config_data[modkey]["mux"].size();
+          //size_t nTC = moduleMap.getNumChannels(typecode);
+          size_t nTC = mod_config_data[modkey]["mux"].size();
+          if (nTC != nTC_mux || nTC != nTC_calv) {
             continue;
           }
           HGCalECONTConfig econtConfig;
+
           econtConfig.density = uint8_t(mod_config_data[modkey]["density"]);
           econtConfig.dropLSB = uint8_t(mod_config_data[modkey]["dropLSB"]);
           econtConfig.select = uint8_t(mod_config_data[modkey]["select"]);
-          econtConfig.stcType = uint8_t(mod_config_data[modkey]["stcType"]);
-          econtConfig.eportTxNumen = uint8_t(mod_config_data[modkey]["eportTxNumen"]);
+          econtConfig.stcType = uint8_t(mod_config_data[modkey]["stc_type"]);
+          econtConfig.eportTxNumen = uint8_t(mod_config_data[modkey]["eporttx_numen"]);
 
           econtConfig.calv.resize(nTC);
           econtConfig.tcMux.resize(nTC);
           econtConfig.offset.resize(nTC);
-          for(std::size_t iTC=0;iTC<nTC;iTC++){
+          for (std::size_t iTC = 0; iTC < nTC; iTC++) {
             econtConfig.calv[iTC] = mod_config_data[modkey]["calv"][iTC];
-            econtConfig.tcMux[iTC] = mod_config_data[modkey]["tcMux"][iTC];
-            econtConfig.offset[iTC] = calculateCellOffset(); //TODO: change this when we know how to calcualte
+            econtConfig.tcMux[iTC] = mod_config_data[modkey]["mux"][iTC];
+            econtConfig.offset[iTC] = calculateCellOffset();  //TODO: change this when we know how to calcualte
           }
           // Caculate module number in the TDAQ
           uint32_t iecont = imod - totalECONTs;
+          tdaqConfig.econts.resize(nECONT);  //resize so length is the number of econTs
           tdaqConfig.econts[iecont] = econtConfig;
         }
-        fedConfig.tdaqs[itdaq]=tdaqConfig;
+
+        fedConfig.tdaqs[itdaq] = tdaqConfig;
+
         totalECONTs += uint32_t(fed_config_data[fedkey]["neconts"][itdaq]);
       }
+
       config_->feds[fedid] = fedConfig;
     }
 
@@ -163,9 +171,7 @@ public:
   }  // end of produce()
 
 private:
-  uint32_t calculateCellOffset(){
-    return 0;
-  }
+  uint32_t calculateCellOffset() { return 0; }
   void setIntervalFor(const edm::eventsetup::EventSetupRecordKey&,
                       const edm::IOVSyncValue&,
                       edm::ValidityInterval& oValidity) override {
@@ -173,8 +179,8 @@ private:
   }
 
   edm::ESGetToken<HGCalMappingModuleIndexer, HGCalElectronicsMappingRcd> indexToken_;
-  const edm::FileInPath fedjson_;   // JSON file
-  const edm::FileInPath modjson_;   // JSON file
+  const edm::FileInPath fedjson_;  // JSON file
+  const edm::FileInPath modjson_;  // JSON file
 };
 
 DEFINE_FWK_EVENTSETUP_SOURCE(HGCalTriggerConfigurationESProducer);
