@@ -50,6 +50,7 @@ HGCalVFEProducer::HGCalVFEProducer(const edm::ParameterSet& conf)
 void HGCalVFEProducer::beginRun(const edm::Run& /*run*/, const edm::EventSetup& es) {
   triggerGeometry_ = es.getHandle(triggerGeomToken_);
   vfeProcess_->setGeometry(triggerGeometry_.product());
+  vfeProcess_->initConfig();
 }
 
 void HGCalVFEProducer::produce(edm::Event& e, const edm::EventSetup& es) {

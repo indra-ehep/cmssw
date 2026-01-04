@@ -19,14 +19,15 @@ public:
   virtual void setGeometry(const HGCalTriggerGeometryBase* const geom) { geometry_ = geom; }
 
   virtual void run(const InputCollection& inputColl, OutputCollection& outColl) = 0;
-
+  
+  virtual void initConfig() { ;}
 protected:
   const HGCalTriggerGeometryBase* geometry() const {
     if (!geometry_)
       throw cms::Exception("HGCTriggerSetupError") << "The geometry has not been set in processor " << name_;
     return geometry_;
   }
-
+  
 private:
   const HGCalTriggerGeometryBase* geometry_;
   const std::string name_;
