@@ -1,4 +1,8 @@
 import FWCore.ParameterSet.Config as cms
+####################################################################
+import os, sys, re
+import FWCore.ParameterSet.VarParsing as VarParsing
+####################################################################
 
 from Configuration.Eras.Era_Phase2C17I13M9_cff import Phase2C17I13M9
 process = cms.Process('DIGI',Phase2C17I13M9)
@@ -22,14 +26,37 @@ process.load('Configuration.StandardSequences.DigiToRaw_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
+####################################################################
+### SETUP OPTIONS
+options = VarParsing.VarParsing('standard')
+options.register('infile',
+                 "root://eosuser.cern.ch///eos/cms/store/group/dpg_hgcal/comm_hgcal/TPG/geomv16_el7_sim/25603.0_SingleElectronPt1000+2026D100_N1000/step3.root",
+                  VarParsing.VarParsing.multiplicity.singleton,
+                  VarParsing.VarParsing.varType.string,
+                  "input file to process: root://eosuser.cern.ch///$eos_path/step3.root or file:/$local_path/step3.root")
+
+options.register('outfile',
+                 "ntuple.root",
+                  VarParsing.VarParsing.multiplicity.singleton,
+                  VarParsing.VarParsing.varType.string,
+                  "iterations 0 1 2 ....")
+
+### get and parse the command line arguments
+options.parseArguments()
+
+print(options)
+
+####################################################################
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(50)
+    input = cms.untracked.int32(options.maxEvents)
 )
 
 # Input source
+fileInput = options.infile
+print("Input file:    ", fileInput)
 process.source = cms.Source("PoolSource",
-       fileNames = cms.untracked.vstring('/store/mc/Phase2Fall22DRMiniAOD/TT_TuneCP5_14TeV-powheg-pythia8/GEN-SIM-DIGI-RAW-MINIAOD/PU200_125X_mcRun4_realistic_v2_ext1-v1/30000/000c5e5f-78f7-44ee-95fe-7b2f2c2e2312.root'),
+       fileNames = cms.untracked.vstring(fileInput),
        inputCommands=cms.untracked.vstring(
            'keep *',
            )
@@ -46,9 +73,11 @@ process.configurationMetadata = cms.untracked.PSet(
 )
 
 # Output definition
+fileOutput = options.outfile
+print("Input file:    ", fileOutput)
 process.TFileService = cms.Service(
     "TFileService",
-    fileName = cms.string("ntuple.root")
+    fileName = cms.string(fileOutput)
     )
 
 # Other statements

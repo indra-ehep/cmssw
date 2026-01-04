@@ -270,6 +270,111 @@ void HGCalROCProcessor::initConfig(){
 					   <<", " << get<1>(ituple)
 					   <<", " << get<2>(ituple)
 					   << ")" << std::endl;
+  TPGFEConfiguration::Configuration cfgs;
+  cfgs.setSiChMapFile("L1Trigger/HGCalTPGStandalone/cfgmap/WaferCellMapTraces.txt");
+  cfgs.setSciChMapFile("L1Trigger/HGCalTPGStandalone/cfgmap/channels_sipmontile_HDtypes.hgcal.txt");
+  cfgs.initId();
+  cfgs.readSiChMapping();
+  cfgs.readSciChMapping();
+  cfgs.loadModIdxToNameMapping();
+  cfgs.loadMuxMapping();
+
+  // std::unordered_map<unsigned, std::vector<unsigned>>
+  // for (const auto& id : triggerGeometry->eeGeometry()->getValidDetIds()) {
+  //   HGCSiliconDetId detid(id);
+  //   if (!triggerGeometry->eeTopology().valid(id))
+  //     continue;
+  //   unsigned cellId = detid.rawId();
+  //   unsigned modId = triggerGeometry->getModuleFromCell(cellId);
+  //   unsigned linkId = triggerGeometry->getLinksInModule(modId);
+  //   HGCalTriggerGeometryBase::geom_set lpGBTIds = triggerGeometry->getLpgbtsFromModule(modId);
+  //   unsigned stage1Id = 1024;
+  //   for (auto& lpGBTId : lpGBTIds)
+  //     stage1Id = triggerGeometry->getStage1FpgaFromLpgbt(lpGBTId);
+  //   //unsigned stage1Id1 = triggerGeometry->getStage1FpgaFromModule(modId);
+  //   modlist.insert(modId);
+  //   modlistCEESi.insert(modId);
+  //   linklist.insert(linkId);
+  //   linklistCEESi.insert(linkId);
+  //   lpGBTlist.insert(lpGBTIds.begin(),lpGBTIds.end());
+  //   lpGBTlistCEESi.insert(lpGBTIds.begin(),lpGBTIds.end());
+  //   stage1list.insert(stage1Id);
+  //   stage1listCEESi.insert(stage1Id);
+    
+  //   //HGCalDetId hid(detid);
+  //   //waferlist.insert(hid.waferType());
+    
+  //   //Follow methods of Geometry/HGCalCommonData/interface/HGCalDDDConstants.h
+  //   //Follow methods of Geometry/HGCalCommonData/interface/HGCalTypes.h
+  //   std::tuple<int, int, int> wtype = triggerGeometry->eeTopology().dddConstants().waferType(detid,true);
+  //   waferlist.insert(get<1>(wtype));
+  //   tuplelist.insert(wtype);
+  // }
+
+  // //==========================================================================================================
+  // //June/2024 : Proposal1 : 1+2+11+1+3+1+3+3+1 = 1(+/-z) + 2(120deg sector) + 11(link max ~1848) + 1(Si/Sci) + 3(ECONT number max 7) + 1(LD/HD) + 4[(Si type)/(Sci type)] +  3(ROC number) + 1 (Half) = 27 bits
+  // //==========================================================================================================
+  // uint32_t zside = 0, sector = 0, link = 0, det = 0;
+  // uint32_t econt = 0, selTC4 = 1, module = 0;
+  // TPGFEConfiguration::TPGFEIdPacking pck;
+  //   for(int ilink=0;ilink<noflpGBTs;ilink++){
+  //   for(int iecond=0;iecond<3;iecond++){
+  //     uint32_t idx = pck.packModId(zside, sector, ilink, det, iecond, selTC4, module); //we assume same ECONT and ECOND number for a given module
+      
+  //     cfgs.setModulePath(zside, sector, ilink, det, iecond, selTC4, module);
+
+  //     switch(ilink){
+  //     case 0:
+  // 	switch(iecond){
+  // 	case 0:
+  // 	  cfgs.setEconTFile("cfgmap/init_econt_e2.yaml");
+  // 	  break;
+  // 	case 1:
+  // 	  cfgs.setEconTFile("cfgmap/init_econt_e1.yaml");
+  // 	  break;
+  // 	default:
+  // 	  cfgs.setEconTFile("cfgmap/init_econt.yaml");
+  // 	  break;
+  // 	}
+  //     case 1:
+  // 	switch(iecond){
+  // 	case 0:
+  // 	  cfgs.setEconTFile("cfgmap/init_econt_e2.yaml");
+  // 	  break;
+  // 	case 1:
+  // 	  cfgs.setEconTFile("cfgmap/init_econt_e1.yaml");
+  // 	  break;
+  // 	default:
+  // 	  cfgs.setEconTFile("cfgmap/init_econt.yaml");
+  // 	  break;
+  // 	}
+  // 	default:
+  // 	  cfgs.setEconTFile("cfgmap/init_econt.yaml");
+  // 	  break;
+  //     }
+  //     cfgs.readEconTConfigYaml();
+
+  //     cfgs.setEconTFile("cfgmap/init_econt_mux_test1.yaml");
+  //     cfgs.readEconTConfigYaml();
+
+  //     cfgs.setEconDFile("cfgmap/init_econd.yaml");
+  //     cfgs.readEconDConfigYaml();      
+      
+  //     for(uint32_t iroc=0;iroc<3;iroc++){
+  // 	std::cout<<"idx: "<<idx<<", ilink: " << ilink << ", iecond: "<<iecond<<", iroc: "<<iroc << ", fname : " << cfgrocname[ilink][iecond][iroc] << std::endl;
+  // 	uint32_t rocid_0 = pck.packRocId(zside, sector, ilink, det, iecond, selTC4, module, iroc, 0);
+  // 	uint32_t rocid_1 = pck.packRocId(zside, sector, ilink, det, iecond, selTC4, module, iroc, 1);
+  // 	cfgs.setRocFile(Form("cfgmap/configs_v3b_full/%s",cfgrocname[ilink][iecond][iroc].c_str()));
+  // 	cfgs.readRocConfigYaml(rocid_0, rocid_1);	
+  //     }//roc loop
+  //   }//econd loop
+  // }//lpGBT loop
+  // cfgs.setPedThZero();
+  
+  // link = 1; econt = 2;
+  // uint32_t testmodid = pck.packModId(zside, sector, link, det, econt, selTC4, module); //we assume same ECONT and ECOND number for a given module
+  // cfgs.printCfgPedTh(testmodid);
+
 }
 
 void HGCalROCProcessor::run(const HGCalDigiCollection& digiColl,
