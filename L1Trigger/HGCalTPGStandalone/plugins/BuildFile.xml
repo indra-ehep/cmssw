@@ -1,0 +1,9 @@
+<library name="L1TriggerL1THGCalPlugins_standalone" file="*.cc">
+  <use name="rootcore"/>
+  <use name="L1Trigger/L1THGCal"/>
+  <use name="DataFormats/L1THGCal"/>
+  <use name="RecoLocalCalo/HGCalRecAlgos"/>
+  <use name="yaml-cpp" />
+  <use name="hls" />
+  <flags EDM_PLUGIN="1"/>
+</library>
